@@ -13,11 +13,13 @@ __Main_Loop:
 	inc ax
 	hlt			
 	
-	mov dx, Status	
+	mov dx, word ptr Status	
 	cmp dx, 2	
 	je right_click	
 	cmp dx, 1
 	je left_click
+	cmp dx, 3
+	je left_release
 	jmp __Loop_Continue	
 right_click:
 	call Clear_Screen	
@@ -25,7 +27,12 @@ right_click:
 	jmp __Loop_Continue	
 left_click:
 	call Check_Area
+	; mov Status, 0
 	jmp __Loop_Continue	
+left_release:
+	call Choose_Colour
+	mov Status, 0
+	
 __Loop_Continue:
 	mov ah, 01
 	int 16h
@@ -118,23 +125,14 @@ Clear_Screen proc near
 	ret
 Clear_Screen endp
 ;===============================================================
-Check_Area proc near	
+Choose_Colour proc near				
 	mov ax, 3
-	int 33h			
-	cmp dx, 300
-	jg check_area_strip
-	je check_area_ret
-	cmp cx, 3
-	jl check_area_ret
-	call Put_5Pixels	
-	ret
-	
-check_area_strip:
+	int 33h		
+	cmp dx, 301
+	jl choose_colour_ret
 	cmp cx, Strip_Width
-	jl check_area_choose_colour
-	ret
-
-check_area_choose_colour:
+	jg choose_colour_ret
+	
 	dec cx
 	dec dx
 	mov ah, 0Dh
@@ -143,6 +141,18 @@ check_area_choose_colour:
 	
 	mov Colour, al
 	call Draw_Colour
+choose_colour_ret:
+	ret
+Choose_Colour endp
+;===============================================================
+Check_Area proc near	
+	mov ax, 3
+	int 33h			
+	cmp dx, 300
+	jge check_area_ret
+	cmp cx, 3
+	jl check_area_ret
+	call Put_5Pixels	
 check_area_ret:
 	ret	
 Check_Area endp
@@ -181,14 +191,14 @@ Mouse_Handler:
 	cmp ax, 10000b
 	je right_button	
 	cmp ax, 100b
-	je left_release	
+	je left_button_release	
 	mov word ptr Status, 1
 	retf		
 right_button:
 	mov word ptr Status, 2				
 	retf
-left_release:
-	mov word ptr Status, 0
+left_button_release:
+	mov word ptr Status, 3
 	retf
 ;==================================================================				
 	Colour db 15
