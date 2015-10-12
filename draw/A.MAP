@@ -1,7 +1,2 @@
-
- Start  Stop   Length Name               Class
-
- 00000H 001FDH 001FEH _TEXT              CODE
- 001FEH 001FEH 00000H _DATA              DATA
-
+Fatal: Unable to open file 'a.obj'
 
