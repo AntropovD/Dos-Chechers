@@ -1,7 +1,7 @@
 
  Start  Stop   Length Name               Class
 
- 00000H 0420EH 0420FH _TEXT              CODE
- 04210H 04210H 00000H _DATA              DATA
+ 00000H 00596H 00597H _TEXT              CODE
+ 00598H 00598H 00000H _DATA              DATA
 
 
