@@ -105,7 +105,7 @@ Repair_Width_Height proc near
 	shl ax, 2
 	mov RowSize, ax
 	mov _X, 0
-
+;asd
 	mov ah, byte ptr _Height
 	mov al, byte ptr [_Height+1]
 	xchg ah, al
