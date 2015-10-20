@@ -167,7 +167,10 @@ _Cx_Width_back2:
 _Cx_Width1:
 	mov cx, 0
 	dec dx
-	jmp _Cx_Width_back1
+	lodsb
+	lodsb
+	lodsb
+	jmp _Cx_Width_back2
 _Cx_Width2:
 	mov cx, 0
 	dec dx
