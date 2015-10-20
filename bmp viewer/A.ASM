@@ -98,8 +98,12 @@ Check_File endp
 Repair_Width_Height proc near
 	mov ah, byte ptr _Width
 	mov al, byte ptr [_Width+1]
-	xchg ah, al	
+	xchg ah, al		
 	mov _Width, ax
+	add ax, 7
+	shr ax, 3
+	shl ax, 2
+	mov RowSize, ax
 	mov _X, 0
 
 	mov ah, byte ptr _Height
@@ -144,19 +148,19 @@ _Paint_Loop:
 	lodsb
 	mov temp, al
 	shr al, 4
-
 	int 10h	
 	inc cx	
-	cmp cx, _Width
-	je _Cx_Width1
-_Cx_Width_back1:
 	mov al, temp
 	and al, 00001111b
 	int 10h
 	inc cx
-	cmp cx, _Width
-	je _Cx_Width2
-_Cx_Width_back2:
+	mov Store, cx
+	inc Count
+	mov cx, Count	
+	cmp cx, RowSize
+	je _New_Row
+_New_Row_back:
+	mov cx, Store
 	cmp si, offset Buffer_End
 	jl _Paint_Loop
 
@@ -164,18 +168,39 @@ _Cx_Width_back2:
 	mov _Y, dx
 	ret
 
-_Cx_Width1:
-	mov cx, 0
-	dec dx
-	lodsb
-	lodsb
-	lodsb
-	jmp _Cx_Width_back2
-_Cx_Width2:
-	mov cx, 0
-	dec dx
-	jmp _Cx_Width_back2
+_New_Row:
+	mov Store, 0
+	dec dx	
+	mov Count, 0	
+	jmp _New_Row_back
 Paint_From_Buffer  endp
+;==============================================================	
+; Check_Reminder proc near
+	; cmp reminder, 0
+	; je _rem0	
+	; cmp reminder, 1
+	; je _rem1
+	; cmp reminder, 2
+	; je _rem2
+	; cmp reminder, 3
+	; je _rem3
+	
+; _rem3:
+	; lodsb
+	; lodsb
+	; ret
+; _rem2:
+	; lodsb
+	; lodsb
+	; ret	
+; _rem1:
+	; lodsb
+	; lodsb
+	; lodsb
+	; ret
+; _rem0:
+	; ret
+; Check_Reminder endp
 ;==============================================================	
 Exit_Proc proc near
 	mov ax, 4c00h
@@ -186,6 +211,9 @@ Exit_Proc endp
 	_X dw 0		
 	_Y dw 0
 	temp db 0
+	RowSize dw 0
+	Count dw 0
+	Store dw 0
 	Error_str db 'File Error', 0dh, 0ah, 024h
 	InputError_str db 'No params', 0dh, 0ah, 024h
 	WrongPixels_Str db 'Wrong Bytes Per Pixels', 0dh, 0ah, 024h
