@@ -109,6 +109,7 @@ Repair_Width_Height proc near
 	mov ah, byte ptr _Height
 	mov al, byte ptr [_Height+1]
 	xchg ah, al
+	add ax, 10
 	mov _Height, ax
 	mov _Y, ax	
 	ret
@@ -146,17 +147,28 @@ Paint_From_Buffer proc near
 	mov bh, 0
 _Paint_Loop:
 	lodsb
+	
+	inc cx
+	cmp cx, _Width
+	jge _MovColor_0
+	_MovColor_0_back:
+	dec cx
+	
 	mov temp, al
 	shr al, 4
+	call CheckColour		
 	int 10h	
 	inc cx	
 	mov al, temp
 	and al, 00001111b
+	call CheckColour
 	int 10h
 	inc cx
 	mov Store, cx
 	inc Count
 	mov cx, Count	
+	
+	
 	cmp cx, RowSize
 	je _New_Row
 _New_Row_back:
@@ -173,6 +185,12 @@ _New_Row:
 	dec dx	
 	mov Count, 0	
 	jmp _New_Row_back
+	
+_MovColor_0:
+	mov al, 0
+	jmp _MovColor_0_back
+exit: 
+	ret
 Paint_From_Buffer  endp
 ;==============================================================	
 ; Check_Reminder proc near
@@ -201,6 +219,50 @@ Paint_From_Buffer  endp
 ; _rem0:
 	; ret
 ; Check_Reminder endp
+;==============================================================	
+CheckColour proc near
+	cmp al, 3
+	je change_3
+	cmp al, 6
+	je change_6
+	cmp al, 0bh
+	je change_b
+	cmp al, 0eh
+	je change_e
+	cmp al, 1
+	je change_1
+	cmp al, 4
+	je change_4	
+	cmp al, 0ch
+	je change_c	
+	cmp al, 09
+	je change_9
+	ret
+change_9:
+	mov al, 0ch
+	ret	
+change_c:
+	mov al, 9
+	ret
+change_1:
+	mov al, 4
+	ret
+change_4:
+	mov al, 1
+	ret
+change_3:
+	mov al, 6
+	ret
+change_6:
+	mov al, 3
+	ret
+change_b:
+	mov al, 0eh
+	ret
+change_e:
+	mov al, 0bh
+	ret	
+CheckColour endp
 ;==============================================================	
 Exit_Proc proc near
 	mov ax, 4c00h
