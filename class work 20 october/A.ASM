@@ -4,7 +4,7 @@
 org 100h
 ;==============================================================
 Start:	
-	mov ax, 10h
+	mov ax, 12h
 	int 10h	
 	;call Read_Paramets
 	call Open_File	

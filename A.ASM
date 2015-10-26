@@ -3,38 +3,72 @@
 .code
 org 100h
 ;==============================================================
-Start:	
-	mov ax, 10h
-	int 10h	
-	;call Read_Paramets
-	call Open_File	
-	call Check_File			
-	call Repair_Width_Height	
-	call Read_Buffer_And_Paint
-	call Exit_Proc
+Start:			
+	call Init	
+	call Read_Picture	
+	call Main_Loop		
 ;==============================================================
-Read_Paramets proc near
-	mov si, 80h	
-	mov di, offset Filename
-	lodsb	
-	cmp al, 0
-	je _Input_Error
-	dec al	
-	xor cx, cx
-	mov cl, al
-	lodsb
-_read_param_byte:
-	lodsb
-	stosb	
-	loop _read_param_byte
+Init proc near
+	mov ax, 12h
+	int 10h	
+	mov ax, 0
+	int 33h
+	mov ax,1
+	int 33h
+	mov ax, 0ch
+	mov cx, 10100b
+	mov dx, offset Mouse_Handler
+	int 33h	
 	ret
-_Input_Error:
-	mov ah, 09h
-	mov dx, offset InputError_str
-	int 21h
-	call Exit_Proc
-Read_Paramets endp
-;==============================================================	
+Init endp
+;==============================================================
+Main_Loop proc near
+	xor ax, ax
+main_loop_label:
+	inc ax 
+	hlt
+	
+	cmp State, 1
+	je Left_Button_Press
+Left_Button_Press_back:	
+	cmp State, 2
+	je Right_Button_Press
+Right_Button_Press_back:
+	
+	mov ah, 01
+	int 16h
+	jz main_loop_label
+	mov ah, 0
+	int 16h
+	cmp ah, 01h
+	jne main_loop_label
+	call Exit_Prog
+	
+Left_Button_Press:
+	mov ax, 2
+	int 33h	
+	call Draw_Picture
+	mov State, 0
+	mov ax, 1
+	int 33h
+	jmp Left_Button_Press_back
+	
+Right_Button_Press:
+	mov ax, 2
+	int 33h
+	mov ax, 12h
+	int 10h
+	mov ax, 1
+	int 33h	
+	jmp Right_Button_Press_back
+Main_Loop endp	
+;==============================================================
+Read_Picture proc near
+	call Open_File
+	call Read_File
+	ret
+Read_Picture endp
+;==============================================================
 Open_File proc near
 	mov ax, 3d00h		
 	mov dx, offset Filename
@@ -42,193 +76,220 @@ Open_File proc near
 	jc File_Error	
 	mov File_Handle, ax
 	ret	
+	
 File_Error:	
 	mov ah, 09h
 	mov dx, offset Error_str
 	int 21h
-	call Exit_Proc
+	call Exit_Prog
+	ret
 Open_File endp
 ;==============================================================	
-Check_File proc near		
+Read_File proc near
 	mov ax, 4200h
 	mov bx, File_Handle
 	xor cx, cx
-	mov dx, 0Ah
-	int 21h	
-
-	mov ah, 3fh
-	mov cx, 4
-	mov dx, offset Starting_Address
+	mov dx, 076h
 	int 21h
 	
-	mov ax, 4200h	
-	xor cx, cx
-	mov dx, 12h
-	int 21h
-
 	mov ah, 3fh
-	mov cx, 4
-	mov dx, offset _Width
-	int 21h	
-	mov ah, 3fh		
-	mov dx, offset _Height
-	int 21h
-
-	mov ah, 3fh
-	mov cx, 2
-	mov dx, offset Color_Number
-	int 21h
-	mov ah, 3fh
-	mov dx, offset Color_Number
-	int 21h
-
-	mov dx, word ptr Color_Number
-	cmp dx, 4
-	jne _Wrong_Bytes_Per_Pixel	
-
-	ret
-_Wrong_Bytes_Per_Pixel:
-	mov ah, 9
-	mov dx, offset WrongPixels_Str
-	int 21h
-	call Exit_Proc
-	ret
-Check_File endp
-;==============================================================	
-Repair_Width_Height proc near
-	mov ah, byte ptr _Width
-	mov al, byte ptr [_Width+1]
-	xchg ah, al		
-	mov _Width, ax
-	add ax, 7
-	shr ax, 3
-	shl ax, 2
-	mov RowSize, ax
-	mov _X, 0
-	
-	mov ah, byte ptr _Height
-	mov al, byte ptr [_Height+1]
-	xchg ah, al
-	add ax, 10
-	mov _Height, ax
-	add ax, 70h
-	mov _Y, ax	
-	
-	ret
-
-Repair_Width_Height endp
-;==============================================================
-Read_Buffer_And_Paint proc near
-	mov ax, 4200h
-	mov bx, File_Handle
-	xor cx, cx
-	mov dx, word ptr Starting_Address
-	int 21h	
-
-_File_Read_Loop:
-	mov ah, 3Fh
 	mov bx, File_Handle
 	mov cx, 480h
-	mov dx, offset Horse
+	mov dx, offset Picture
 	int 21h
-	push ax
-	call Paint_From_Buffer
-	pop ax
-	cmp ax, 200h
-	je _File_Read_Loop
-
-	ret		
-Read_Buffer_And_Paint endp
+	ret
+Read_File endp
 ;==============================================================	
-Paint_From_Buffer proc near
-	mov si, offset Horse
-	mov cx, _X
-	mov dx, _Y
+Mouse_Handler:
+	cmp ax, 10000b
+	je right_button_release
+	mov State, 1	
+	retf	
+right_button_release:
+	mov State, 2
+	retf
+;==============================================================
+Exit_Prog proc near
+	mov ax, 2
+	int 33h		
+	mov ax, 000Ch
+	mov cx, 0000h
+	int 33h	
+	mov ax, 3
+	int 10h			
+	int 20h
+	ret
+Exit_Prog endp	
+;==============================================================
+;al -color	
+Change_Color proc near
+	push ax dx
+	xor ax, 0fh
+	shl ax, 8
+	inc ax
+	mov dx, 3ceh ; регистр разрешения установки сброса
+	out dx, ax
+	pop dx ax
+	ret
+Change_Color endp
+;==============================================================
+; cx - x, dx - y
+Print_Pixel proc near
+	push ax cx dx
 
-	mov ax, 0CFFh
-	mov bh, 0
-_Paint_Loop:
+	shl dx, 6
+	mov bx, dx
+	shr dx, 2
+	add bx, dx ; 80*dx
+	mov dx, cx
+	shr dx, 3 ; cx/8
+	add bx, dx
+	; в bx смещений до нужного байта
+
+	; установка бита нужного пикселя
+	and cl, 7
+	mov ch, 7
+	sub ch, cl
+	xchg cl, ch
+	mov ch, 1
+	rol ch, cl
+	; в ch маска с единицей на позиции изменяемого пикселя
+
+	mov ax, 8
+	mov ah, ch
+	mov dx, 3ceh ; регистр битовой маски
+	out dx, ax
+
+	mov dh, 0ffh
+	xchg dh, byte ptr es:[bx]
+
+	pop dx cx ax
+	ret
+Print_Pixel endp
+;==============================================================
+Draw_Picture proc near
+	mov ax, 0a000h
+	mov es, ax
+
+	mov ax, 3
+	int 33h	
+	call Check_Coords
+	cmp ax, 1
+	je Fail_Draw
+	
+	mov CoordX, cx
+	mov CoordY, dx
+	add cx, 24
+	mov X_Border, cx
+	sub cx, 48
+	
+	sub dx, 24
+	mov Y_Border, dx
+	add dx, 48
+	
+	mov si, offset Picture	
+	mov di, offset _Mask
+	mov count, 0	
+	mov bl, ds:[di]
+Paint_Loop:
 	lodsb
-	
-	; mov bh, mymask[cx]+2
-	
-	inc cx
-	cmp cx, _Width
-	jge _MovColor_0
-	_MovColor_0_back:
-	dec cx
-	
 	mov temp, al
 	shr al, 4
-	call CheckColour	
-	add cx, 140h
-	int 10h		
-	sub cx, 140h
-	inc cx		
-	mov al, temp
-	and al, 00001111b
-	call CheckColour	
-	add cx, 140h
-	int 10h
-	sub cx, 140h
+	call Check_Colour
+	call Change_Color		
+	
+	call Check_Mask
+	cmp al, 13h
+	je jump_mask_1
+	call Print_Pixel
+jump_mask_1:
 	inc cx
-	mov Store, cx
-	inc Count
-	mov cx, Count	
+	inc count
 	
+	mov al, temp
+	and al, 01111b	
+	call Check_Colour
+	call Change_Color
+	call Check_Mask
+	cmp al, 13h
+	je jump_mask_2
+	call Print_Pixel
+jump_mask_2:
+	inc cx
+	inc count
 	
-	cmp cx, RowSize
-	je _New_Row
-_New_Row_back:
-	mov cx, Store
-	cmp si, offset Buffer_End
-	jl _Paint_Loop
-
-	mov _X, cx
-	mov _Y, dx
+	cmp cx, X_Border
+	je New_Line
+New_Line_back:	
+	
+	cmp count, 8
+	je add_count
+add_count_back:
+	
+	cmp si, offset Picture_End
+	jl Paint_Loop
+	ret	
+	
+New_Line:
+	dec dx
+	cmp dx, Y_Border
+	je Finish_Drawing
+	mov cx, CoordX
+	sub cx, 24
+	jmp New_Line_back
+	
+add_count:
+	mov count, 0
+	inc di
+	mov bl, ds:[di]	
+	jmp add_count_back
+	
+Fail_Draw:
+	call Beep
+Finish_Drawing:
 	ret
-
-_New_Row:
-	mov Store, 0
-	dec dx	
-	mov Count, 0	
-	jmp _New_Row_back
-	
-_MovColor_0:
-	mov al, 0
-	jmp _MovColor_0_back
-exit: 
+	INCLUDE .\Mask.inc
+Draw_Picture endp
+;==============================================================
+Check_Mask proc near
+	push bx cx dx	
+	xor bx,bx
+	xor cx, cx
+	xor dx, dx	
+	mov bl, ds:[di]
+	mov dl, 1
+	mov cl, 7
+	sub cl, byte ptr count
+	shl dl, cl
+	and dl, bl
+	cmp dl, 0
+	je fail
+	pop dx cx bx 
 	ret
-Paint_From_Buffer  endp
-;==============================================================	
-; Check_Reminder proc near
-	; cmp reminder, 0
-	; je _rem0	
-	; cmp reminder, 1
-	; je _rem1
-	; cmp reminder, 2
-	; je _rem2
-	; cmp reminder, 3
-	; je _rem3
+fail:
+	mov al, 13h
+	pop dx cx bx
+	ret
+Check_Mask endp
+;==============================================================
+Check_Coords proc near
+	cmp cx, 24
+	jle Not_Success
+	cmp dx, 24
+	jle Not_Success
+	cmp cx, 616
+	jge Not_Success
+	cmp dx, 456
+	jge Not_Success
 	
-; _rem3:
-	; lodsb
-	; lodsb
-	; ret
-; _rem2:
-	; lodsb
-	; lodsb
-	; ret	
-; _rem1:
-	; lodsb
-	; lodsb
-	; lodsb
-	; ret
-; _rem0:
-	; ret
-; Check_Reminder endp
+	mov ax, 0
+	ret
+Not_Success:
+	mov ax, 1
+	ret	
+Check_Coords endp
 ;==============================================================	
-CheckColour proc near
+Check_Colour proc near
 	cmp al, 3
 	je change_3
 	cmp al, 6
@@ -244,14 +305,8 @@ CheckColour proc near
 	cmp al, 0ch
 	je change_c	
 	cmp al, 09
-	je change_9
-	cmp al, 0fh
-	je change_f
-	ret
-	
-change_f:
-	mov al, 0
-	ret
+	je change_9	
+	ret	
 change_9:
 	mov al, 0ch
 	ret	
@@ -276,94 +331,66 @@ change_b:
 change_e:
 	mov al, 0bh
 	ret	
-CheckColour endp
-;==============================================================	
-Exit_Proc proc near
-	mov ax, 4c00h
-	int 21h	
-	ret
-Exit_Proc endp
-;==============================================================	
-	_X dw 0		
-	_Y dw 0
-	temp db 0
-	RowSize dw 0
-	Count dw 0
-	Store dw 0
-	Error_str db 'File Error', 0dh, 0ah, 024h
-	InputError_str db 'No params', 0dh, 0ah, 024h
-	WrongPixels_Str db 'Wrong Bytes Per Pixels', 0dh, 0ah, 024h
-	Param_Len db 0
-	File_Handle dw 0
-	_Width dw 0
-	dw 0
-	_Double_Width dw 0
-	_Height dw 0
-	dw 0
-	Color_Number dw 0
-	Starting_Address db 4 dup (0)
-	;Filename db 20h dup(0)
-	Filename db 'horse.bmp',0
-	Horse db 480h dup(0)
-	Buffer_End db 0
-	mymask db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,0b,0b,0b,0b,0b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,0b,0b,0b,0b,0b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,0b,0b,0b,0b,0b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,0b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,0b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	db 1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b,1b
-	
-	
-	
+Check_Colour endp
 ;==============================================================
+Beep proc near
+	mov ax, 320
+	call Sound
+	hlt
+	hlt
+	call No_Sound
+	ret
+Beep endp
+;==============================================================
+Sound proc near
+	push     ax    
+	push     bx
+	push     dx
+	mov      bx,ax  
+	mov      ax,34DDh
+	mov      dx,12h 
+	cmp      dx,bx  
+	jnb      Done   
+	div      bx     
+	mov      bx,ax
+	in       al,61h
+	or       al,3  
+	out      61h,al
+	mov      al,00001011b 
+					  
+	mov      dx,43h
+	out      dx,al     
+	dec      dx
+	mov      al,bl
+	out      dx,al     
+	mov      al,bh
+	out      dx,al     
+Done:
+	pop		dx        
+	pop     bx
+	pop     ax
+	ret
+Sound  endp	
+;==============================================================	
+No_Sound proc near	
+		push     ax
+		in       al,61h 
+		and      al,not 3
+		out      61h,al
+		pop      ax
+	ret
+No_Sound endp
+
+State db 0
+temp db 0
+count db 0
+CoordX dw 0
+CoordY dw 0
+X_Border dw 0
+Y_Border dw 0
+File_Handle dw 0
+Filename db 'car.bmp', 0
+Error_str db 'Picture file Error', 0
+Picture db 480h dup(0) 
+Picture_End db 0
 end start
