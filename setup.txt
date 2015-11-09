@@ -1,0 +1,31 @@
+master
+"C:\Program Files (x86)\DOSBox-0.74\DOSBox.exe" -userconf -conf "C:\DOS\DOS\MINE\master.conf"
+[serial]
+serial2=nullmodem port:31337
+
+slave 
+"C:\Program Files (x86)\DOSBox-0.74\DOSBox.exe" -userconf -conf "C:\DOS\DOS\MINE\slave.conf"
+[serial]
+serial2=nullmodem server:127.0.0.1 
+
+
+4 функции
+-инициализация
+-деинициализация
+-запись 
+-чтение
+
+Зубков 309 страница
+
+2 проги
+1-я пишет, что вводят с клавиатуры в com порт
+2-я пишет, что приходит с com порта на экран
+	
+
+serial_int
+обработчик прерываений
+
+возврат из прерывания
+mov al, 20h
+out 20h, al
+iret
