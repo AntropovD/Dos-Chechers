@@ -15,6 +15,37 @@ Start:
 	sti
 	jmp Main_Loop
 
+
+
+Print_Mouse_Coords proc
+	mov ax, CURSOR_Y
+	mov bl, 48
+	div bl
+	xor bx, bx
+	mov bl, al
+	inc bx
+	call Print_BX
+	mov ah, 2 
+	mov dl, ':'
+	int 21h
+
+	mov ax, CURSOR_X
+	mov bl, 48
+	div bl
+	xor bx, bx
+	mov bl, al
+	inc bx
+	call Print_BX	
+	cmp CURSOR_POSITION, 1700h		
+	jl print_coords_exit
+	call Clear_Message_Frame
+
+	print_coords_exit:
+	add CURSOR_POSITION, 100h
+	call Set_Cursor_Position_To_Variable
+	ret
+Print_Mouse_Coords endp
+
 Init proc 
 	call Clear_Screen
 	call Draw_Chessboard
@@ -97,7 +128,8 @@ ConnectionLost_Message proc
 	mov dx, 1b02h
 	mov bp, offset message_buffer	
 	int 10h
-	call Exit_Procedure
+	call Set_Cursor_Position_To_Variable
+;	call Exit_Procedure
 	ret
 ConnectionLost_Message endp
 
@@ -126,6 +158,12 @@ interrupt_08h proc
 interrupt_08h endp
 
 Exit_Procedure proc
+	mov ah, 02
+	mov bh, 0	
+	mov dx, 1b02h
+	int 10h
+	mov ax, 2
+	int 33h		
 	call Serial_Uninstall
 	call Interrupts_Uninstall
 	int 20h

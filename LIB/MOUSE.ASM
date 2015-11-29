@@ -10,35 +10,29 @@ Mouse_Init proc
 	mov dx, offset Mouse_Handler
 	int 33h
 	mov CURSOR_POSITION, 0184h
+	call Set_Cursor_Position_To_Variable
 	ret
 Mouse_Init endp
 
 Mouse_Handler:
 	mov ax, 3
 	int 33h
-	mov CURSOR_X, cx
-	mov CURSOR_Y, dx
+	mov CURSOR_Y, cx
+	mov CURSOR_X, dx
 	mov MouseClick_flag, 1	
 	retf
 
 Check_Mouse proc
+	cmp MouseClick_flag, 1
+	jne check_mouse_exit
+	mov MouseClick_flag, 0
 	call Print_Mouse_Coords
+
+	check_mouse_exit:
 	ret
 Check_Mouse endp
 
 
-Print_Mouse_Coords proc
-	mov bx, CURSOR_Y
-	call Print_BX
-	mov ah, 2 
-	mov dl, ':'
-	int 21h
-	mov bx, CURSOR_Y
-	call Print_BX
-	add CURSOR_POSITION, 100h	
-	call Set_Cursor_Position_To_Variable
-	ret
-Print_Mouse_Coords endp
 
 Set_Cursor_Position_To_Variable proc
 	mov ah, 02

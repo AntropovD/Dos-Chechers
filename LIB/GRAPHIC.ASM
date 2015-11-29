@@ -304,6 +304,23 @@ Draw_Frame proc
 	ret
 Draw_Frame endp
 
+Clear_Message_Frame proc
+	mov temp, 0	
+	mov ax, 1301h
+	mov bx, 0dh	
+	mov cx, 27	
+	mov dx, 0183h
+	mov bp, offset empty_frame_part		
+	clear_frame_loop:		
+		inc temp
+		int 10h
+		add dx, 100h
+		cmp temp, 22
+		jl clear_frame_loop	
+	mov CURSOR_POSITION, 0084h
+	call Set_Cursor_Position_To_Variable
+	ret
+Clear_Message_Frame endp
 
 	X dw 0
 	Y dw 0
@@ -321,6 +338,7 @@ Draw_Frame endp
 	Pawn_Buffer db 480h dup (0)
 	Pawn_Buffer_end db 0
 
+	empty_frame_part db 27 dup(32)
 	frame_part1 db 201, 27 dup (205), 187
 	frame_part2 db 186, 27 dup (32), 186
 	frame_part3 db 200, 27 dup(205), 188
