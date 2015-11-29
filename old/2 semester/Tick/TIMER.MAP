@@ -1,7 +1,0 @@
-
- Start  Stop   Length Name               Class
-
- 00000H 0FC8CH 0FC8DH _TEXT              CODE
- 0FC8EH 0FC8EH 00000H _DATA              DATA
-
-
