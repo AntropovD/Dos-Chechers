@@ -236,7 +236,6 @@ Print_Pixel_NZ proc
 		ret
 Print_Pixel_NZ endp
 
-
 Reset_Pawns proc 
 	call Init_Pawn_Buffer
 
@@ -256,7 +255,6 @@ Reset_Pawns proc
 
 	ret
 Reset_Pawns endp
-
 
 Draw_WhitePawn_Line proc 
 	mov index, 0
@@ -282,12 +280,37 @@ Draw_BlackPawn_Line proc
 	ret
 Draw_BlackPawn_Line endp
 
+Draw_Frame proc
+	push cs
+	pop es
+	mov ax, 1301h
+	mov bx, 09h
+	mov cx, 29 
+	mov dx, 0082h
+	mov bp, offset frame_part1
+	int 10h
+	mov temp, 22
+	mov bp, offset frame_part2
+	draw_frame_loop:
+	add dx, 100h
+	int 10h
+	dec temp
+	cmp temp, 0
+	jg draw_frame_loop
+	
+	add dx, 100h
+	mov bp, offset frame_part3
+	int 10h
+	ret
+Draw_Frame endp
+
+
 	X dw 0
 	Y dw 0
 	index db 0
 	temp db 0
-	CHESSBOARD_X equ 30
-	CHESSBOARD_Y equ 30
+	CHESSBOARD_X equ 0
+	CHESSBOARD_Y equ 0
 	CHESSBOARD_BLACK equ 6
 	CHESSBOARD_WHITE equ 14
 	PAWN_WHITE equ 7
@@ -297,3 +320,7 @@ Draw_BlackPawn_Line endp
 	Pawn_File_Handle dw 0
 	Pawn_Buffer db 480h dup (0)
 	Pawn_Buffer_end db 0
+
+	frame_part1 db 201, 27 dup (205), 187
+	frame_part2 db 186, 27 dup (32), 186
+	frame_part3 db 200, 27 dup(205), 188

@@ -7,24 +7,21 @@ Start:
 	
 	Main_Loop:
 	cli
-		cmp timer_flag, 1
-		jne not_second_tick
-		mov timer_flag, 0
-		mov ah, 2
-		mov dl, 'A'
-		int 21h
+		call Check_Mouse
+		call Check_Ticks_Counts
+		call Check_Com_Port
 	not_second_tick:
 		call Keyboard_CheckBuffer
 	sti
 	jmp Main_Loop
-	
 
 Init proc 
 	call Clear_Screen
 	call Draw_Chessboard
+	call Draw_Frame
+	call Mouse_Init
 	call Serial_Install	
-	call Interrupts_Install
-	
+	call Interrupts_Install	
 	ret
 Init endp
 
@@ -54,13 +51,75 @@ Interrupts_Uninstall proc
 	ret
 Interrupts_Uninstall endp
 
+Send_Sync_Impulse proc
+	push ax
+	mov al, 01h
+	call Serial_AlToBuf
+	call Serial_Send
+	pop ax
+	ret
+Send_Sync_Impulse endp
+
+Check_Com_Port proc
+	cmp serial_recvCount, 0
+	je nothing_comes
+
+	call Serial_GetSymbol
+	mov ah, 2
+	mov dl, al
+	int 21h
+
+	nothing_comes:
+	ret
+Check_Com_Port endp
+
+Check_Ticks_Counts proc	
+	cmp SendSync_flag, 1
+	jne not_sendSync
+	mov SendSync_flag, 0
+	call Send_Sync_Impulse
+
+	not_sendSync:
+	cmp ConnectionLost_flag, 1
+	jne not_connectionLost
+	call ConnectionLost_Message
+
+	not_connectionLost:
+	ret
+Check_Ticks_Counts endp
+
+ConnectionLost_Message proc
+	push cs
+	pop es
+	mov ax, 1301h
+	mov bx, 0dh	
+	mov cx, 16
+	mov dx, 1b02h
+	mov bp, offset message_buffer	
+	int 10h
+	call Exit_Procedure
+	ret
+ConnectionLost_Message endp
+
+
 interrupt_08h proc
-	cmp tick_count, 18
-	jl not_next_second
-	mov tick_count, 0
-	mov timer_flag, 1
-	not_next_second:
-	inc tick_count
+	inc sync_send
+	inc sync_exit
+
+	mov al, sync_send
+	cmp al, sync_wait_send
+	jl not_sync_send
+	mov SendSync_flag, 1
+	mov sync_send, 0
+
+	not_sync_send:
+	mov al, sync_exit
+	cmp al, sync_wait_exit
+	jl not_sync_exit
+	mov ConnectionLost_flag, 1
+	mov sync_exit, 0
+	not_sync_exit:
+
 	mov al, 20h
 	out 20h, al
 	iret
@@ -72,10 +131,21 @@ Exit_Procedure proc
 	int 20h
 	ret
 Exit_Procedure endp
+	
+	sync_wait_exit db 60
+	sync_wait_send db 20
+
+	sync_send db 0
+	sync_exit db 0
 
 	vector_08h dd ?
-	timer_flag db 0
-	tick_count dw 0
+	SendSync_flag db 0	
+	ConnectionLost_flag db 0
+	Connection_flag db 0
+
+	connectionLost_msg db 'Connection Lost!',0
+	message_buffer db 'Connection Lost!',0
+
 	include .\LIB\GRAPHIC.ASM	
 	include .\LIB\KEYBOARD.ASM
 	include .\LIB\MOUSE.ASM	
