@@ -1,224 +1,84 @@
-	model tiny
+	.model tiny
 	.code
 	.386
 	org 100h
-start:
-	call Init 
-
-	xor ax, ax
-	main_loop:
-		inc ax 
-		hlt		
-		;call Check_ComPort
+Start:
+	call Init	
+	
+	Main_Loop:
+	cli
+		cmp timer_flag, 1
+		jne not_second_tick
+		mov timer_flag, 0
+		mov ah, 2
+		mov dl, 'A'
+		int 21h
+	not_second_tick:
 		call Keyboard_CheckBuffer
-		jmp main_loop
+	sti
+	jmp Main_Loop
+	
 
 Init proc 
-	call Serial_Install
-	call Init_Graphic
-	call Clear_Message_Buffer
-
-	mov data_pointer, offset data_buffer
-	mov message_pointer, offset message_buffer	
-	mov message_fin, offset message_buffer
-
+	call Clear_Screen
+	call Draw_Chessboard
+	call Serial_Install	
+	call Interrupts_Install
+	
 	ret
 Init endp
 
-Printable_Letter_Proc proc
-	call Al_To_BufMsg	
-	call Output_BufMsg
-	call Serial_AlToBuf
+Interrupts_Install proc
+	cli
+		mov ax, 3508h
+		int 21h
+		mov word ptr vector_08h, bx
+		mov word ptr vector_08h+2, es		
+		mov ax, 02508h
+		mov dx, offset interrupt_08h
+		int 21h
+	sti
 	ret
-Printable_Letter_Proc endp
+Interrupts_Install endp
 
-Output_BufMsg proc
-	mov ax, 1301h
-	mov bx, 0dh	
-	mov cx, 76
-	mov dx, 1502h
-	mov bp, offset message_buffer	
-	int 10h
-	mov ax, 1301h
-	mov bx, 0dh	
-	mov cx, 76
-	mov dx, 1602h
-	mov bp, offset message_buffer	
-	add bp, 76
-	int 10h
-
-	inc pointer_coords
-	mov ah, 2
-	mov bh, 0
-	mov dx, pointer_coords
-	int 10h
-
+Interrupts_Uninstall proc
+	cli
+		push ds
+		mov dx, word ptr vector_08h
+		mov ax, word ptr vector_08h+2
+		mov ds, ax
+		mov ax, 2508h
+		int 21h
+		pop ds
+	sti
 	ret
-Output_BufMsg endp
+Interrupts_Uninstall endp
 
-AddMessage_To_Buffer proc
-	mov si, offset message_buffer
-	mov di, data_pointer
-	mov count, 0
-	loop1:
-		lodsb
-		stosb
-		inc data_pointer
-		inc count		
-		cmp si, message_fin
-		jl loop1
+interrupt_08h proc
+	cmp tick_count, 18
+	jl not_next_second
+	mov tick_count, 0
+	mov timer_flag, 1
+	not_next_second:
+	inc tick_count
 	mov al, 20h
-	loop2:
-		stosb
-		inc data_pointer
-		inc count 
-		cmp count, 152
-		jl loop2
+	out 20h, al
+	iret
+interrupt_08h endp
+
+Exit_Procedure proc
+	call Serial_Uninstall
+	call Interrupts_Uninstall
+	int 20h
 	ret
-AddMessage_To_Buffer endp
+Exit_Procedure endp
 
-Keyboard_CheckBuffer proc 
-	mov ah, 01
-	int 16h
-	jz check_buffer_exit
-	mov ah, 0
-	int 16h
-	cmp ah, 01h
-	je esc_pressed
-	cmp al, 08h	
-	je backspace
-	cmp ah, 53h
-	je delete
-	cmp ah, 4bh
-	je left
-	cmp ah,  4dh	
-	je right
-	cmp ah, 1ch
-	je enter_pressed
-	cmp al, 20h
-	jge printable_letter
-	ret
-	printable_letter:
-		call Printable_Letter_Proc
-		ret
-	right:
-		call Right_Proc
-		ret
-	left:
-		call Left_Proc
-		ret
-	backspace:
-		call Backspace_proc
-		ret
-	delete:
-		call Delete_proc
-		ret
-	enter_pressed:
-		call Send_Message
-		ret
-	esc_pressed:
-		call Exit_Procedure	
-	check_buffer_exit:
-		ret
-Keyboard_CheckBuffer endp	
+	vector_08h dd ?
+	timer_flag db 0
+	tick_count dw 0
+	include .\LIB\GRAPHIC.ASM	
+	include .\LIB\KEYBOARD.ASM
+	include .\LIB\MOUSE.ASM	
+	include .\LIB\SERIAL.ASM
+end Start
 
-Al_To_BufMsg proc 
-	mov di, message_pointer
-	stosb
-	inc message_pointer	
-	inc message_fin
-	ret
-Al_To_BufMsg endp
-
-Right_proc proc
-	call Read_Cursor_Position	
-	inc dl
-	cmp dl, 78
-	je next_Line
-	inc message_pointer
-	inc pointer_coords
-	call Set_Cursor_Position
-	ret
-	next_Line:
-		cmp dh, 22
-		je last_line
-		inc dh
-		mov dl, 02	
-		inc message_pointer
-		inc pointer_coords
-		call Set_Cursor_Position
-	last_line:
-		ret
-Right_Proc endp
-
-Left_Proc proc
-	call Read_Cursor_Position
-	dec dl
-	cmp dl, 01
-	je prev_line
-	dec message_pointer
-	dec pointer_coords
-	call Set_Cursor_Position
-	ret
-	prev_line:
-		cmp dh, 21
-		je first_line
-		dec dh
-		mov dl, 77
-		dec message_pointer
-		dec pointer_coords
-		call Set_Cursor_Position
-	first_line:
-		ret
-Left_Proc endp
-
-Delete_proc proc 
-	
-	ret
-Delete_proc endp
-
-Backspace_proc proc
-
-	ret
-Backspace_proc endp
-
-	include settings\serial.asm
-	include lib.asm
-
-	data_buffer db 1368 dup(32)
-	data_pointer dw 0
-
-	message_buffer db 152 dup(32)
-	message_pointer dw 0
-	message_fin dw 0
-
-	pointer_coords dw 0
-	count dw 0
-	color db 0
-
-	empty_format_border db 78 dup(32)
-	format_border db 201, 78 dup (205), 187
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 204, 78 dup (205), 185
-		db 186, 78 dup (32), 186
-		db 186, 78 dup (32), 186
-		db 200, 78 dup (205), 188	
-end start
