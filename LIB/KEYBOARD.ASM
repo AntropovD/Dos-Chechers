@@ -1,4 +1,4 @@
-
+;==============================================================
 Keyboard_CheckBuffer proc 
 	mov ah, 01
 	int 16h
@@ -6,9 +6,13 @@ Keyboard_CheckBuffer proc
 	mov ah, 0
 	int 16h
 	cmp ah, 01h
-	jne check_buffer_exit
-	call Exit_Procedure
+	je esc_pressed	
 
 	check_buffer_exit:
 		ret
+
+	esc_pressed:
+		call Exit_Procedure
+		ret
 Keyboard_CheckBuffer endp
+;==============================================================

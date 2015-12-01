@@ -2,9 +2,9 @@
 	.code
 	.386
 	org 100h
-Start:
-	call Init	
-	
+Start:	
+	call Init
+
 	Main_Loop:
 	cli
 		call Check_Mouse
@@ -15,39 +15,8 @@ Start:
 	sti
 	jmp Main_Loop
 
-
-
-Print_Mouse_Coords proc
-	mov ax, CURSOR_Y
-	mov bl, 48
-	div bl
-	xor bx, bx
-	mov bl, al
-	inc bx
-	call Print_BX
-	mov ah, 2 
-	mov dl, ':'
-	int 21h
-
-	mov ax, CURSOR_X
-	mov bl, 48
-	div bl
-	xor bx, bx
-	mov bl, al
-	inc bx
-	call Print_BX	
-	cmp CURSOR_POSITION, 1700h		
-	jl print_coords_exit
-	call Clear_Message_Frame
-
-	print_coords_exit:
-	add CURSOR_POSITION, 100h
-	call Set_Cursor_Position_To_Variable
-	ret
-Print_Mouse_Coords endp
-
 Init proc 
-	call Clear_Screen
+	call Init_Graphic
 	call Draw_Chessboard
 	call Draw_Frame
 	call Mouse_Init
@@ -126,13 +95,12 @@ ConnectionLost_Message proc
 	mov bx, 0dh	
 	mov cx, 16
 	mov dx, 1b02h
-	mov bp, offset message_buffer	
+	mov bp, offset connectionLost_msg
 	int 10h
 	call Set_Cursor_Position_To_Variable
 ;	call Exit_Procedure
 	ret
 ConnectionLost_Message endp
-
 
 interrupt_08h proc
 	inc sync_send
@@ -158,14 +126,11 @@ interrupt_08h proc
 interrupt_08h endp
 
 Exit_Procedure proc
-	mov ah, 02
-	mov bh, 0	
-	mov dx, 1b02h
-	int 10h
-	mov ax, 2
-	int 33h		
 	call Serial_Uninstall
-	call Interrupts_Uninstall
+	call Interrupts_Uninstall	
+	xor ax, ax
+	mov al, OLD_VIDEOMODE
+	int 10h
 	int 20h
 	ret
 Exit_Procedure endp
@@ -182,7 +147,18 @@ Exit_Procedure endp
 	Connection_flag db 0
 
 	connectionLost_msg db 'Connection Lost!',0
-	message_buffer db 'Connection Lost!',0
+	; 1 - белая пешка 
+	; 2 - черная пешка
+	; 3 - выбранная белая
+	; 4 - выбранная черная
+	BOARD 	db 0, 0, 0, 0, 0, 0, 0, 0
+		db 2, 2, 2, 2, 2, 2, 2, 2
+		db 2, 2, 2, 2, 2, 2, 2, 2
+		db 0, 0, 0, 0, 0, 0, 0, 0
+		db 0, 0, 0, 0, 0, 0, 0, 0
+		db 1, 1, 1, 1, 1, 1, 1, 1
+		db 1, 1, 1, 1, 1, 1, 1, 1
+		db 0, 0, 0, 0, 0, 0, 0, 0
 
 	include .\LIB\GRAPHIC.ASM	
 	include .\LIB\KEYBOARD.ASM
