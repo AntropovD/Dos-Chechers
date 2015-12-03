@@ -93,6 +93,50 @@ Print_Mouse_Coords proc
 	ret
 Print_Mouse_Coords endp
 ;===============================================================
+Add_BufferString_To_History proc
+	mov si, offset BufferString
+	mov di, HB_Pointer
+	mov cx, 27
+	repne movsb
+	add HB_Pointer, 27
+	mov bx, HB_Pointer
+	cmp bx, offset HB_End
+	jne not_null_hb_pointer
+	mov HB_Pointer, offset History_Buffer
+
+	not_null_hb_pointer:
+		mov Update_History_Buffer_Flag, 1
+		ret
+Add_BufferString_To_History endp
+;===============================================================
+Update_Hist_Buf proc	
+	mov ax, 1300h
+	mov bx, 0fh
+	mov cx, 27
+	mov dx, 0083h
+	mov bp, HB_Pointer
+
+	up_hist_buf_loop:		
+		inc dh
+		int 10h
+		add bp, 27
+		cmp bp, offset HB_End
+		jge bp_overflow
+		bp_ret:
+		cmp bp, HB_Pointer		
+		jne up_hist_buf_loop
+	ret
+
+	bp_overflow:
+		mov bp, offset History_Buffer
+		jmp bp_ret
+
+Update_Hist_Buf endp
+;===============================================================
+
+
+;===============================================================
+
 	; ; Make_Move proc
 	; 	mov ax, CURSOR_X
 	; 	call Get_Box_From_Coords_In_Ax
@@ -114,7 +158,6 @@ Print_Mouse_Coords endp
 
 	; 	ret
 	; Make_Move endp	
-
 ;===============================================================
 	LAST_CHOSEN_BOX db 255
 	HEX_SYMBOLS db '0123456789ABCDEF'

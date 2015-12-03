@@ -285,7 +285,6 @@ Check_History_Buffer proc
 	ret
 Check_History_Buffer endp
 ;===============================================================
-
 Update_Msg_Buf proc
 	mov bx, offset Message_Buffer
 	mov ax, MsgBuf_Pointer 
@@ -335,9 +334,8 @@ Variables:
 			db 200, 48 dup(205), 188
 
 	HB_Pointer dw 0
-	History_Buffer db 270 dup (32)
+	History_Buffer db 756 dup (32)
 	HB_End db ?
-
 
 	MsgBuf_Pointer dw 0
 	Message_Buffer db 48 dup (32)

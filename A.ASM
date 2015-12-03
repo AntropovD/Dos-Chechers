@@ -16,45 +16,6 @@ Start:
 	sti
 	jmp Main_Loop
 ;===============================================================
-Add_BufferString_To_History proc
-	mov si, offset BufferString
-	mov di, HB_Pointer
-	mov cx, 27
-	repne movsb
-	add HB_Pointer, 27
-	mov Update_History_Buffer_Flag, 1
-	ret
-Add_BufferString_To_History endp
-
-Update_Hist_Buf proc	
-	mov ax, 1300h
-	mov bx, 0fh
-	mov cx, 27
-	mov dx, 0183h
-	mov bp, HB_Pointer
-	add bp, 27
-	int 10h
-
-	up_hist_buf_loop:
-		add bp, 27
-		cmp bp, offset HB_End
-		je bp_overflow
-		bp_ret:
-		inc dh
-		int 10h
-		cmp bp, HB_Pointer		
-		jne up_hist_buf_loop
-	ret
-
-	bp_overflow:
-		mov bp, offset History_Buffer
-		jmp bp_ret
-
-Update_Hist_Buf endp
-
-hb_max dw ?
-;===============================================================
-;===============================================================
 Init proc 
 	call Init_Graphic	
 	call Mouse_Init

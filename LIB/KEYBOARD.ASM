@@ -28,16 +28,17 @@ Keyboard_CheckBuffer proc
 Keyboard_CheckBuffer endp
 ;===============================================================	
 Enter_Pressed proc
-	call Copy_Msg_To_Hist
-	lea bx, Message_Buffer
-	mov di, MsgBuf_Pointer
+	call Copy_Msg_To_Hist	
+	mov di, offset Message_Buffer
+	mov cx, 54	
 	clear_loop:
 		mov byte ptr [di], ' '
-		dec di
-	cmp di, bx
-	jge clear_loop	
-	mov MsgBuf_Pointer, bx
-	call Msg_Buf_Clear	
+		inc di
+		dec cx
+		cmp cx, 0
+		jne clear_loop
+	call Update_Msg_Buf
+	mov MsgBuf_Pointer, offset Message_Buffer	
 	ret
 Enter_Pressed endp
 ;===============================================================
@@ -55,23 +56,30 @@ Printable_Char proc
 	ret
 Printable_Char endp
 ;===============================================================
-Copy_Msg_To_Hist proc	
-	; mov ax, MsgBuf_Pointer
-	; mov bx, offset Message_Buffer
-	; sub ax, bx
-	; mov bl, 27
-	; div bl
-	; cmp ah, 0
-	; jz count_lines
-	; inc al
-	; xor ah, ah
-	; count_lines:
-	; ;mov si, offset Message_Buffer
-	; ;mov di, HB_Pointer
+Copy_Msg_To_Hist proc		
+	mov si, offset Message_Buffer
+	mov di, HB_Pointer	
+	mov cx, 27
+	repne movsb
 
+	add HB_Pointer, 27
+	mov bx, HB_Pointer
+	cmp bx, offset HB_End
+	jne not_null_hb_pointer_cmth1
+	mov HB_Pointer, offset History_Buffer
 
+	not_null_hb_pointer_cmth1:
+	mov cx, 27
+	repne movsb
 
-	ret
+	add HB_Pointer, 27
+	mov bx, HB_Pointer
+	cmp bx, offset HB_End
+	jne not_null_hb_pointer_cmth2
+	mov HB_Pointer, offset History_Buffer
+	not_null_hb_pointer_cmth2:
+		mov Update_History_Buffer_Flag, 1
+		ret
 Copy_Msg_To_Hist endp
 ;===============================================================
 ;===============================================================
