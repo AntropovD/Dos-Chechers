@@ -165,5 +165,6 @@ Exit_Procedure endp
 	include .\LIB\KEYBOARD.ASM
 	include .\LIB\MOUSE.ASM	
 	include .\LIB\SERIAL.ASM
+	include .\LIB\GAME.ASM
 end Start
 
