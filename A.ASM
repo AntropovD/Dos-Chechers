@@ -6,25 +6,65 @@ Start:
 	call Init
 
 	Main_Loop:
-	cli
+	cli	
+		call Check_History_Buffer
 		call Check_Mouse
 		call Check_Ticks_Counts
-		call Check_Com_Port
+	;	call Check_Com_Port
 	not_second_tick:
 		call Keyboard_CheckBuffer
 	sti
 	jmp Main_Loop
+;===============================================================
+Add_BufferString_To_History proc
+	mov si, offset BufferString
+	mov di, HB_Pointer
+	mov cx, 27
+	repne movsb
+	add HB_Pointer, 27
+	mov Update_History_Buffer_Flag, 1
+	ret
+Add_BufferString_To_History endp
 
+Update_Hist_Buf proc	
+	mov ax, 1300h
+	mov bx, 0fh
+	mov cx, 27
+	mov dx, 0183h
+	mov bp, HB_Pointer
+	add bp, 27
+	int 10h
+
+	up_hist_buf_loop:
+		add bp, 27
+		cmp bp, offset HB_End
+		je bp_overflow
+		bp_ret:
+		inc dh
+		int 10h
+		cmp bp, HB_Pointer		
+		jne up_hist_buf_loop
+	ret
+
+	bp_overflow:
+		mov bp, offset History_Buffer
+		jmp bp_ret
+
+Update_Hist_Buf endp
+
+hb_max dw ?
+;===============================================================
+;===============================================================
 Init proc 
-	call Init_Graphic
-	call Draw_Chessboard
-	call Draw_Frame
+	call Init_Graphic	
 	call Mouse_Init
 	call Serial_Install	
 	call Interrupts_Install	
+	lea bx, Message_Buffer
+	mov MsgBuf_Pointer, bx
 	ret
 Init endp
-
+;===============================================================
 Interrupts_Install proc
 	cli
 		mov ax, 3508h
@@ -37,7 +77,7 @@ Interrupts_Install proc
 	sti
 	ret
 Interrupts_Install endp
-
+;===============================================================
 Interrupts_Uninstall proc
 	cli
 		push ds
@@ -50,21 +90,21 @@ Interrupts_Uninstall proc
 	sti
 	ret
 Interrupts_Uninstall endp
-
+;===============================================================
 Send_Sync_Impulse proc
 	push ax
 	mov al, 01h
-	call Serial_AlToBuf
-	call Serial_Send
+	call Serial_AL_To_Buf
+	call Serial_Send_All
 	pop ax
 	ret
 Send_Sync_Impulse endp
-
+;===============================================================
 Check_Com_Port proc
-	cmp serial_recvCount, 0
+	call Serial_Check_Sth_Come	
 	je nothing_comes
 
-	call Serial_GetSymbol
+	call Serial_Get_Symbol_To_AL
 	mov ah, 2
 	mov dl, al
 	int 21h
@@ -72,7 +112,7 @@ Check_Com_Port proc
 	nothing_comes:
 	ret
 Check_Com_Port endp
-
+;===============================================================
 Check_Ticks_Counts proc	
 	cmp SendSync_flag, 1
 	jne not_sendSync
@@ -82,12 +122,12 @@ Check_Ticks_Counts proc
 	not_sendSync:
 	cmp ConnectionLost_flag, 1
 	jne not_connectionLost
-	call ConnectionLost_Message
+	;call ConnectionLost_Message
 
 	not_connectionLost:
 	ret
 Check_Ticks_Counts endp
-
+;===============================================================
 ConnectionLost_Message proc
 	push cs
 	pop es
@@ -97,11 +137,11 @@ ConnectionLost_Message proc
 	mov dx, 1b02h
 	mov bp, offset connectionLost_msg
 	int 10h
-	call Set_Cursor_Position_To_Variable
+	;call Set_Cursor_Position_To_Variable
 ;	call Exit_Procedure
 	ret
 ConnectionLost_Message endp
-
+;===============================================================
 interrupt_08h proc
 	inc sync_send
 	inc sync_exit
@@ -124,7 +164,7 @@ interrupt_08h proc
 	out 20h, al
 	iret
 interrupt_08h endp
-
+;===============================================================
 Exit_Procedure proc
 	call Serial_Uninstall
 	call Interrupts_Uninstall	
@@ -133,8 +173,8 @@ Exit_Procedure proc
 	int 10h
 	int 20h
 	ret
-Exit_Procedure endp
-	
+Exit_Procedure endp	
+;===============================================================	
 	sync_wait_exit db 60
 	sync_wait_send db 20
 

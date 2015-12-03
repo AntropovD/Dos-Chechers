@@ -1,4 +1,4 @@
-;==============================================================
+;===============================================================
 Init_Graphic proc 
 	mov ax, 12h
 	int 10h
@@ -7,10 +7,15 @@ Init_Graphic proc
 	int 10h
 	mov Old_Videomode, al
 
+	mov HB_Pointer, offset History_Buffer
+
 	call Init_Pawn_Buffer
+	call Draw_Chessboard
+	call Draw_Frame
+	call Draw_Message_Box
 	ret
 Init_Graphic endp
-;==============================================================
+;===============================================================
 Change_Colour proc 
 	push ax dx
 	xor ax, 0fh
@@ -21,7 +26,7 @@ Change_Colour proc
 	pop dx ax
 	ret
 Change_Colour endp
-;==============================================================
+;===============================================================
 Print_Pixel proc
 	push ax cx dx
 	mov ax, 0a000h
@@ -56,7 +61,7 @@ Print_Pixel proc
 	pop dx cx ax
 	ret
 Print_Pixel endp
-;==============================================================
+;===============================================================
 Init_Pawn_Buffer proc near
 	mov ax, 3d00h
 	mov dx, offset Pawn_Filename
@@ -74,7 +79,7 @@ Init_Pawn_Buffer proc near
 	int 21h
 	ret
 Init_Pawn_Buffer endp
-;==============================================================
+;===============================================================
 Draw_Chessboard proc
 	mov cx, 0
 	mov dx, 0
@@ -127,22 +132,21 @@ Draw_Chessboard proc
 		pop si
 		jmp no_pawn_in_cell
 Draw_Chessboard endp
-
-;==============================================================
+;===============================================================
 	Draw_WhiteBox proc 
 		mov al, CHESSBOARD_WHITE
 		call Change_Colour
 		call Draw_Box
 		ret
 	Draw_WhiteBox endp
-	;==============================================================
+	;===============================================================
 	Draw_BlackBox proc 
 		mov al, CHESSBOARD_BLACK	
 		call Change_Colour
 		call Draw_Box
 		ret
 	Draw_BlackBox endp	
-	;==============================================================
+	;===============================================================
 	Draw_Box proc 
 		mov X, 0
 		mov Y, 0
@@ -165,23 +169,23 @@ Draw_Chessboard endp
 			sub dx, 48
 			ret
 	Draw_Box endp
-;==============================================================
+;===============================================================
 
-;==============================================================
+;===============================================================
 	Draw_WhitePawn proc 
 		mov al, PAWN_WHITE
 		call Change_Colour
 		call Draw_Pawn
 		ret	
 	Draw_WhitePawn endp
-	;==============================================================
+	;===============================================================
 	Draw_BlackPawn proc
 		mov al, PAWN_BLACK
 		call Change_Colour
 		call Draw_Pawn
 		ret
 	Draw_BlackPawn endp
-	;==============================================================
+	;===============================================================
 	Draw_Pawn proc
 		mov X, 0
 		mov Y, 0
@@ -214,7 +218,7 @@ Draw_Chessboard endp
 			sub dx, 48
 			ret
 	Draw_Pawn endp
-	;==============================================================
+	;===============================================================
 	Print_Pixel_If_Not_Zero proc
 		cmp al, 0
 		jne Print_Pixel_If_Not_Zero_exit
@@ -222,9 +226,9 @@ Draw_Chessboard endp
 		Print_Pixel_If_Not_Zero_exit:
 			ret
 	Print_Pixel_If_Not_Zero endp
-;==============================================================
+;===============================================================
 
-;==============================================================
+;===============================================================
 Draw_Frame proc
 	push cs
 	pop es
@@ -234,7 +238,7 @@ Draw_Frame proc
 	mov dx, 0082h
 	mov bp, offset Frame_Part1
 	int 10h
-	mov Temp, 22
+	mov Temp, 28
 	mov bp, offset Frame_Part2
 	draw_frame_loop:
 	add dx, 100h
@@ -248,7 +252,67 @@ Draw_Frame proc
 	int 10h
 	ret
 Draw_Frame endp
-;==============================================================
+;===============================================================
+Draw_Message_Box proc
+	push cs
+	pop es
+	mov ax, 1300h
+	mov bx, 09h
+	mov cx, 50
+	mov dx, 1b00h
+	lea bp, Message_Box
+	int 10h
+	mov ax, 1300h
+	mov bx, 09h
+	mov cx, 50
+	mov dx, 1c00h
+	lea bp, Message_Box[50]
+	int 10h
+	mov ax, 1300h
+	mov bx, 09h
+	mov cx, 50
+	mov dx, 1d00h
+	lea bp, Message_Box[100]
+	int 10h
+	ret
+Draw_Message_Box endp
+;===============================================================
+Check_History_Buffer proc
+	cmp Update_History_Buffer_Flag, 1
+	jne not_update_Hist_Buf
+	call Update_Hist_Buf
+	not_update_Hist_Buf:
+	ret
+Check_History_Buffer endp
+;===============================================================
+
+Update_Msg_Buf proc
+	mov bx, offset Message_Buffer
+	mov ax, MsgBuf_Pointer 
+	sub ax, bx
+	mov cx, ax
+
+	push cs
+	pop es
+	mov ax, 1300h
+	mov bx, 00fh	
+	mov dx, 01c02h
+	mov bp, offset Message_Buffer
+	int 10h
+	ret
+Update_Msg_Buf endp
+;===============================================================
+Msg_Buf_Clear proc
+	push cs
+	pop es
+	mov ax, 1300h
+	mov bx, 00fh
+	mov dx, 1c02h
+	mov bp, offset Clear_Buffer
+	int 10h
+	ret
+Msg_Buf_Clear endp
+;===============================================================
 
 Variables:
 	Index db ?
@@ -259,11 +323,26 @@ Variables:
 	Pawn_Filename db 'IMG\PAWN.BMP',0
 	Pawn_Buffer db 480h dup (0)
 
+	Update_History_Buffer_Flag db 0	
+
 	Empty_Frame_Part db 27 dup(32)
 	Frame_Part1 db 201, 27 dup (205), 187
 	Frame_Part2 db 186, 27 dup (32), 186
 	Frame_Part3 db 200, 27 dup(205), 188
-;==============================================================
+
+	Message_Box 	db 201, 48 dup(205), 187
+			db 186, 48 dup(32), 186
+			db 200, 48 dup(205), 188
+
+	HB_Pointer dw 0
+	History_Buffer db 270 dup (32)
+	HB_End db ?
+
+
+	MsgBuf_Pointer dw 0
+	Message_Buffer db 48 dup (32)
+	Clear_Buffer db 48 dup (32)
+;===============================================================
 Constants:
 	CHESSBOARD_BLACK equ 6
 	CHESSBOARD_WHITE equ 14

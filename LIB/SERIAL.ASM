@@ -1,240 +1,297 @@
-Serial_Int:
-	push ax
-	push dx
-	push ds
-	mov dx, 2fAh ; pегистp идентификации пpеpываний
+;===============================================================
+	COM equ 02F8h
+	IRQ equ 0Bh
+
+	E_BITMASK equ 11110111b
+	D_BITMASK equ 00001000b
+
+	SBuffer_Beg dw 0
+	SBuffer_End dw 0
+	NO_need_to db 0
+	Send_Buffer db 2000 dup (' ')
+
+	RBuffer_Beg dw 0
+	RBuffer_End dw 0
+	Recv_Buffer db 2000 dup (' ')
+
+	old_irq dd ?
+;===============================================================
+Serial_Interrupt proc far
+	pusha
+
+	mov dx, COM+2
 	in al, dx
-	mov serial_int_sts, al
-	test al, 1 ; есть отложенные пpеpывания?
-	jz serial_int_is ; нет
-	pop serial_ds ; да, передаём управление старому обработчику
-	pop dx
-	pop ax
-	push serial_cs
-	push serial_ip
-	push serial_ds
+
+	repeat_handler:
+		and ax, 00000110b
+
+		try_recv:
+			cmp ax, 4
+			jnz check_for_repeat
+			call recv_h
+
+		check_for_repeat:
+			mov dx, COM + 2
+			in al, dx
+			test al, 1
+			jz repeat_handler
+	
+	headler_end:
+		mov al, 20h
+		out 20h, al
+		popa
+	iret
+
+	recv_h proc near
+		mov dx, COM
+		in al, dx
+		
+		recv_in_buff:
+			mov di, RBuffer_End
+			mov Recv_Buffer[di], al
+			inc RBuffer_End
+
+			cmp RBuffer_End, 2000
+			jnz recv_h_ret
+			mov RBuffer_End, 0
+		
+		recv_h_ret:
+			ret
+	recv_h endp
+Serial_Interrupt endp
+;===============================================================
+Serial_Install proc near
+	push es
+
+	mov ax, 3500h + IRQ
+	int 21h
+	mov word ptr old_irq, bx
+	mov word ptr old_irq + 2, es
+	mov ax, 2500h + IRQ
+	lea dx, Serial_Interrupt
+	int 21h
+
+	pop es
+
+	mov al, 0
+	disable_irqs:
+		mov dx, COM + 1
+		out dx, al
+
+	modem_lines_to_0:
+		mov dx, COM + 4
+		out dx, al
+
+	read_from_LSR_RBR_MSR:
+		mov dx, COM + 5
+		in al, dx
+
+		mov dx, COM + 0
+		in al, dx
+
+		mov dx, COM + 6
+		in al, dx
+
+	disable_FIFO:
+		mov dx, COM + 2
+		mov al, 0
+		out dx, al
+
+	set_speed:
+		mov dx, COM + 3
+		mov al, 80h
+		out dx, al
+
+		mov dx, COM + 0
+		mov al, 2
+		out dx, al
+
+		mov dx, COM + 1
+		mov al, 0
+		out dx, al
+
+	line_init:
+		mov dx, COM + 3
+		mov al, 0011b
+		out dx, al
+
+	modem_init:
+		mov dx, COM + 4
+		mov al, 1011b
+		out dx, al
+
+	; здесь следует выполнить проверку на наличие модема на этом порту (читать
+	; регистр MSR, пока не будут установлены линии CTS и DSR или не кончится время),
+	; а затем послать в модем (то есть поместить в буфер передачи) инициализирующую
+	; строку, например "ATZ",0Dh
+
+	allow_irqs:
+		mov dx, COM + 1
+		mov al, 0001b
+		out dx, al
+
+		in al, 21h
+		and al, E_BITMASK
+		out 21h, al
+
+	ret
+Serial_Install endp
+;===============================================================
+Serial_Uninstall proc near
+	push ds
+		
+	disable_all_irqs:
+		in al, 21h
+		or al, D_BITMASK
+		out 21h, al
+
+		mov dx, COM + 1
+		mov al, 0
+		out dx, al
+
+		mov dx, COM + 4
+		mov al, 0
+		out dx, al
+
+		mov ax, 2500h + IRQ
+		lds dx, old_irq
+		int 21h
+	
 	pop ds
 	ret
-	serial_int_is:
-		; mov al, 63h ; послать EOI для IRQ3
-		; out 20h, al ; в 1-й контpоллеp пpеpываний
-		test serial_int_sts, 100b  ; пpеpывание по пpиему?
-		jz serial_int_ret     ; нет
-		mov dx, 2f8h    ; pегистp данных
-		in al, dx       ; вводим символ
-		or al, al       ; если пpинят нуль,
-		jz serial_int_ret    ; то игноpиpуем его
-	    call serial_alToRecvBuf ; пишем в буфер приема
-	serial_int_ret:
-		mov al, 63h ; eoi for irq3
-		out 20h, al
-		pop ds
-		pop dx
-		pop ax
-		iret
-
-Serial_Install proc
-	push ax
-    push dx
-    push bx
-    push es
-    in al, 21h   ; IMR 1-го контpолеpа пpеpываний
-    or al, 8h    ; запpетить пpеpывание IRQ3 от COM2
-    out 21h, al
-    mov al, 0Bh
-    mov ah, 35h
-    int 21h       ; взять вектоp Int 0Bh в es:bx    
-    mov serial_ip, bx ; и сохpанить его
-    mov serial_cs, es
-    mov al, 0Bh
-    lea dx, serial_int
-    push ds
-	mov bx, cs
-	mov ds, bx
-	mov ah, 25h
-	int 21h       ; установить Int 0Bh = ds:dx
-    pop ds    
-    pop es
-    pop bx    
-    cli    
-        in al, 21h    ; IMR 1-го контpоллеpа пpеpываний
-        and al, not 8h
-        out 21h, al    ; pазpешить пpеpывания от COM2
-        mov dx, 2fBh   ; pегистp упpавления линией
-        mov al, 11000011b ; 8-N-1, DLAB, обрыв
-        out dx, al
-        mov dx, 2f8h
-        mov al, 0ch
-        out dx, al     ; младший байт для скоpости 9600 бод
-        inc dx
-        mov al, 0
-        out dx, al     ; стаpший байт скоpости
-        mov dx, 2fBh   ; pегистp упpавления линией
-        in al, dx
-		and al, not 80h ; no DLAB
-        out dx, al
-        mov dx, 2f9h   ; pегистp pазpешения пpеpываний
-        mov al, 1      ; pазpешить пpеpывания по пpиему
-        out dx, al
-        nop
-        nop
-        mov dx, 2fCh   ; pегистp упpавления модемом
-        mov al, 00001011b ; установить DTR, RTS и OUT2
-        out dx, al   
-    sti    
-    mov dx, 2f8h   ; pегистp данных
-    in al, dx     ; сбpосить буфеp пpиема  
-    pop dx
-    pop ax
-    ret
-Serial_Install endp
-
-Serial_Send proc
-	mov	cx, [serial_bufCount]
-    serial_send_letter:
-        serial_send_waitLine:
-		mov dx, 2fDh   ; pегистp состояния линии
-		in al, dx
-		test al, 20h   ; готов к пеpедаче?
-		jnz serial_send_output   ; да
-			jmp short $+2
-			jmp short $+2
-			jmp serial_send_waitLine ; нет, ждем
-		serial_send_output:
-		mov	bx, [serial_bufPtr]
-		sub	bx, cx
-		cmp	bx, offset serial_buf
-		jae	serial_send_output_ok
-			add	bx, serial_bufSize
-		serial_send_output_ok:
-		mov	al, [bx]
-		mov dx, 2f8h   ; pегистp данных
-		out dx, al     ; вывести символ
-	loop serial_send_letter
-	mov	serial_bufCount, 0 
-    ret
-Serial_Send endp
-
-Serial_Uninstall proc
-    mov dx, 2fDh ; pегистp состояния линии
-    in al, dx   
-    jmp short $+2       ; коpоткая задеpжка
-    test al, 60h        ; пеpедача окончена?
-    jz serial_uninstall ; ждем, если нет
-	in al, 21h
-	or al, 8h	; запретить IRQ 3
-	out 21h, al
-    mov dx, 2f9h   ; pегистp pазpешения пpеpываний
-    mov al, 0      ; запpетить пpеpывания
-    out dx, al
-    jmp short $+2 ; еще подождем...
-    mov dx, 2fCh        ; pегистp упpавления модемом
-    mov al, 00000b ; 00011b   ; (де)активиpовать DTR и RTS (??)
-    out dx, al
-    jmp short $+2
-    push bx
-    mov al, 0Bh
-    mov dx, serial_ip
-    push ds
-    mov bx, serial_cs
-    mov ds, bx
-    mov ah, 25h
-    int 21h ; восстановить вектоp Int 0Bh
-    pop ds
-    pop bx
-	in al, 21h
-	and al, not 8h	; разрешить IRQ 3
-	out 21h, al
-    ret
 Serial_Uninstall endp
+;===============================================================
+Serial_AL_To_Buf proc near
+	mov di, SBuffer_End
+	mov Send_Buffer[di], al
 
-Serial_AlToBuf proc
-	push bx
-	mov	bx, [serial_bufPtr]
-	cmp al, 08h ; backspace
-	jne serial_alToBuf_go
-	dec serial_bufCount
-	dec bx
-	cmp bx, offset serial_buf
-	jae serial_alToBuf_save
-	add bx, serial_BufSize
-	jmp serial_alToBuf_save
-	serial_alToBuf_go:
-		inc	serial_bufCount
-		mov	[bx], al
-		inc	bx
-	    cmp	bx, offset serial_buf + serial_bufSize
-		jb serial_alToBuf_save
-		mov	bx, offset serial_buf
-	serial_alToBuf_save:
-		mov	serial_bufPtr, bx
-		pop bx
-	    ret
-Serial_AlToBuf endp
+	inc SBuffer_End
+	cmp SBuffer_End, 2000
+	jnz Serial_Al_to_Buf_ret
+	mov SBuffer_End, 0
 
-Serial_AlToRecvBuf proc
-    push bx
-	mov bx, [serial_recvPtr]
-	cmp al, 08h ; backspace
-	jne serial_alToRecvBuf_go
-	dec serial_recvCount
-	dec bx
-	cmp bx, offset serial_recvBuf
-	jae serial_alToRecvBuf_save
-	add bx, serial_bufSize
-	jmp serial_alToRecvBuf_save
-	serial_alToRecvBuf_go:
-		inc serial_recvCount
-		mov [bx], al
-		inc bx
-		cmp bx, offset serial_recvBuf + serial_bufSize
-		jb serial_alToRecvBuf_save
-		mov bx, offset serial_recvBuf
-	serial_alToRecvBuf_save:
-		mov serial_recvPtr, bx
-		pop bx
+	Serial_Al_to_Buf_ret:
 		ret
-Serial_AlToRecvBuf endp
+Serial_AL_To_Buf endp
+;===============================================================
+Serial_Send_Str_In_SI_To_Buffer proc near
+	cmp cx, 0
+	jz send_str_ret
 
-Serial_GetSymbol proc
-	mov cx, serial_recvCount
-	or cx, cx
-	jnz serial_getSymbol_ret
-	xor al, al
-	ret	
-	serial_getSymbol_ret:
-		mov bx, [serial_recvPtr]
-		sub bx, cx
-		cmp bx, offset serial_recvBuf
-		jae serial_getSymbol_go
-		add bx, serial_bufSize
-	serial_getSymbol_go:
-		mov al, [bx]
-		dec serial_recvCount
-	serial_gs_e:
-		ret
-Serial_GetSymbol endp
+	mov di, SBuffer_End
+	send_one_char:
+		mov dh, [si]
+		mov Send_Buffer[di], dh
 
-Serial_Lookup proc
-	mov cx, serial_recvCount
-	or cx, cx
-	jnz serial_lookup_ret
-	xor al, al
+		inc si
+		inc di
+		cmp di, 2000
+		jnz continue_send_loop
+		mov di, 0
+
+		continue_send_loop:
+			loop send_one_char
+
+	mov SBuffer_End, di
+
+	send_str_ret:
 	ret
-	serial_lookup_ret:
-		mov bx, [serial_recvPtr]
-		mov al, [bx]
-		ret
-Serial_Lookup endp
+Serial_Send_Str_In_SI_To_Buffer endp
+;===============================================================
+Serial_Send_All proc near
+	mov bx, SBuffer_End
 
-	serial_ip           dw  0               ; стаpый адpес Int 0Bh
-	serial_cs           dw  0
-	serial_ds           dw  0               ; служебные пеpеменные
-	serial_int_sts      db  0
-	serial_bufSize      equ 100h            ; pазмеp буфеpа
-	serial_buf          db  serial_bufSize + 2 dup (?) ; буфер передачи
-	serial_bufPtr	    dw	serial_buf		
-	serial_bufCount	    dw	0
-	serial_recvBuf      db  serial_bufSize + 2 dup (?) ; буфер приёма
-	serial_recvPtr	    dw	serial_recvBuf
-	serial_recvCount    dw  0
+	send_one:
+		cmp bx, SBuffer_Beg
+		jz send_one_ext
+
+		mov si, SBuffer_Beg
+		mov al, Send_Buffer[si]
+
+		inc SBuffer_Beg
+		cmp SBuffer_Beg, 2000
+		jnz send_atLeast
+		mov SBuffer_Beg, 0
+
+		send_atLeast:
+			push ax
+			serial_send_waitLine:
+				mov dx, COM + 5
+				in al, dx
+				test al, 20h
+	        	jnz serial_send_output
+
+	            jmp short $+2
+	            jmp short $+2
+	            jmp serial_send_waitLine
+
+            serial_send_output:
+            	pop ax
+				mov dx, COM
+				out dx, al
+		jmp send_one
+
+	send_one_ext:
+
+		ret
+Serial_Send_All endp
+;===============================================================
+Serial_Get_Symbol_To_AL proc near
+	mov ax, RBuffer_End
+	cmp ax, RBuffer_Beg
+	jnz pop_symb
+	xor ax, ax
+	jmp get_symbols_to_al_ret
+
+	pop_symb:
+		mov si, RBuffer_Beg
+		mov al, Recv_Buffer[si]
+
+		inc RBuffer_Beg
+		cmp RBuffer_Beg, 2000
+		jnz get_symbols_to_al_ret
+		mov RBuffer_Beg, 0
+
+	get_symbols_to_al_ret:
+		ret
+Serial_Get_Symbol_To_AL endp
+;===============================================================
+Serial_Get_Str_To_DI proc near
+	xor cx, cx
+
+	mov si, RBuffer_Beg
+	cmp si, RBuffer_End
+	jz get_str_ret
+
+	get_str_loop:
+		mov al, Recv_Buffer[si]
+		mov [di], al
+
+		inc di
+		inc cx
+
+		inc si
+		cmp si, 2000
+		jnz get_str_loop_continue
+		mov si, 0
+
+		get_str_loop_continue:
+			cmp cx, bx
+			jz get_str_ext_loop
+
+			cmp si, RBuffer_End
+			jnz get_str_loop
+			
+	get_str_ext_loop:
+		mov RBuffer_Beg, si
+
+	get_str_ret:
+		ret
+Serial_Get_Str_To_DI endp
+;===============================================================
+Serial_Check_Sth_Come proc
+	mov ax, RBuffer_End
+	cmp ax, RBuffer_Beg
+	ret
+Serial_Check_Sth_Come endp
+;===============================================================

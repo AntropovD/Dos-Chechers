@@ -1,4 +1,4 @@
-;==============================================================
+;===============================================================
 Mouse_Init proc 
 	mov ax, 0
 	int 33h
@@ -10,11 +10,9 @@ Mouse_Init proc
 	mov cx, 0100b
 	mov dx, offset Mouse_Handler
 	int 33h
-	mov CURSOR_POSITION, 0184h
-	call Set_Cursor_Position_To_Variable
 	ret
 Mouse_Init endp
-;==============================================================
+;===============================================================
 Mouse_Handler:
 	mov ax, 3
 	int 33h
@@ -22,7 +20,7 @@ Mouse_Handler:
 	mov CURSOR_X, dx
 	mov MouseClick_flag, 1	
 	retf
-;==============================================================
+;===============================================================
 Check_Mouse proc
 	cmp MouseClick_flag, 1
 	jne check_mouse_exit
@@ -34,21 +32,13 @@ Check_Mouse proc
 	jge check_mouse_exit
 
 	call Print_Mouse_Coords
-	call Make_Move
+	;call Make_Move
 
 	check_mouse_exit:
-		mov LAST_CHOSEN_BOX, 255
+		;mov LAST_CHOSEN_BOX, 255
 	ret
-Check_Mouse endp
-;==============================================================
-Set_Cursor_Position_To_Variable proc
-	mov ah, 02
-	mov bh, 0	
-	mov dx, CURSOR_POSITION
-	int 10h
-	ret
-Set_Cursor_Position_To_Variable endp	
-;==============================================================
+Check_Mouse endp	
+;===============================================================
 Print_AX proc
 	mov bx, ax
 	mov ah, 2
@@ -67,7 +57,7 @@ Print_AX proc
 		jnz _print_loop_bx
 	ret
 Print_AX endp
-;==============================================================
+;===============================================================
 Get_Box_From_Coords_In_Ax proc
 	mov bl, 48
 	div bl
@@ -76,52 +66,60 @@ Get_Box_From_Coords_In_Ax proc
 	mov ax, bx
 	ret
 Get_Box_From_Coords_In_Ax endp
-;==============================================================
+;===============================================================
 Print_Mouse_Coords proc
+	push cs
+	pop es
+
 	mov ax, CURSOR_Y
 	call Get_Box_From_Coords_In_Ax	
-	call Print_AX
+	add al, '0'
+	mov di, offset BufferString	
 
-	mov ah, 2 
-	mov dl, ':'
-	int 21h
+	stosb
+	mov al, ':'
+	stosb	
 
 	mov ax, CURSOR_X
 	call Get_Box_From_Coords_In_Ax	
-	call Print_AX
+	add al, '0'
+	stosb
 
-	mov ah, 2 
-	mov dl, ' '
-	int 21h
+	mov cx, 24
+	mov al, ' '
+	repne stosb
 
+	call Add_BufferString_To_History
 	ret
 Print_Mouse_Coords endp
-;==============================================================
-Make_Move proc
-	mov ax, CURSOR_X
-	call Get_Box_From_Coords_In_Ax
-	shl al, 3
-	push ax
-	mov ax, CURSOR_Y
-	call Get_Box_From_Coords_In_Ax
-	pop bx 
-	add al, bl
-	call Print_AX
-	
-	cmp CURSOR_POSITION, 1700h		
-	jl print_coords_exit
-	;call Clear_Message_Frame
+;===============================================================
+	; ; Make_Move proc
+	; 	mov ax, CURSOR_X
+	; 	call Get_Box_From_Coords_In_Ax
+	; 	shl al, 3
+	; 	push ax
+	; 	mov ax, CURSOR_Y
+	; 	call Get_Box_From_Coords_In_Ax
+	; 	pop bx 
+	; 	add al, bl
+	; 	call Print_AX
+		
+	; 	cmp CURSOR_POSITION, 1700h		
+	; 	jl print_coords_exit
+	; 	;call Clear_Message_Frame
 
-	print_coords_exit:
-	add CURSOR_POSITION, 100h
-	call Set_Cursor_Position_To_Variable
+	; 	print_coords_exit:
+	; 	add CURSOR_POSITION, 100h
+	; 	call Set_Cursor_Position_To_Variable
 
-	ret
-Make_Move endp
-;==============================================================
+	; 	ret
+	; Make_Move endp	
+
+;===============================================================
 	LAST_CHOSEN_BOX db 255
 	HEX_SYMBOLS db '0123456789ABCDEF'
-	CURSOR_POSITION dw ?
 	CURSOR_X dw ?
 	CURSOR_Y dw ?
 	MouseClick_flag db 0
+	BufferString db 27 dup(' ')
+
