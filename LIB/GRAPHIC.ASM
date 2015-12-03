@@ -283,9 +283,9 @@
 Check_History_Buffer proc
 	cmp Update_History_Buffer_Flag, 1
 	jne not_update_Hist_Buf
-	call Update_Hist_Buf
-	not_update_Hist_Buf:
-		mov Update_History_Buffer_Flag, 0
+	call Update_Hist_Buf	
+	mov Update_History_Buffer_Flag, 0
+	not_update_Hist_Buf:		
 	ret
 Check_History_Buffer endp
 ;===============================================================

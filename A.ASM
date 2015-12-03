@@ -15,6 +15,34 @@ Start:
 		call Keyboard_CheckBuffer
 	sti
 	jmp Main_Loop
+
+
+Get_Board_Number proc
+	mov cx, CURSOR_X
+	mov dx, CURSOR_Y
+	call Get_Box_From_Coords_In_Ax	
+	dec ah
+	dec al
+	mov bl, ah
+	mov ah, 0
+	shl ax, 3
+	mov bh, 0
+	add ax, bx
+	ret
+Get_Board_Number endp
+
+Check_If_Your_Colour proc
+	mov bx, ax
+	xor ax, ax
+	mov al, bh
+	shr ax, 3
+	mov ah, 0
+	add ax, bx
+	mov bp, ax
+	xor ax, ax
+	lea ax, BOARD[bp]	
+	ret	
+Check_If_Your_Colour endp
 ;===============================================================
 Init proc 
 	call Init_Graphic	
@@ -146,6 +174,8 @@ Exit_Procedure endp
 	SendSync_flag db 0	
 	ConnectionLost_flag db 0
 	Connection_flag db 0
+
+	Your_Colour db 1
 
 	connectionLost_msg db 'Connection Lost!',0
 	; 1 - белая пешка 

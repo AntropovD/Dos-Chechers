@@ -1,31 +1,30 @@
 ;===============================================================
-	Mouse_Init proc 
-		mov ax, 0
-		int 33h
-		mov ax, 1
-		int 33h
-		push cs
-		pop es
-		mov ax, 0Ch
-		mov cx, 0100b
-		mov dx, offset Mouse_Handler
-		int 33h
-		ret
-	Mouse_Init endp
-	;===============================================================
-	Mouse_Handler:
-		mov ax, 3
-		int 33h
-		mov CURSOR_Y, cx
-		mov CURSOR_X, dx
-		mov MouseClick_flag, 1	
-		retf
+Mouse_Init proc 
+	mov ax, 0
+	int 33h
+	mov ax, 1
+	int 33h
+	push cs
+	pop es
+	mov ax, 0Ch
+	mov cx, 0100b
+	mov dx, offset Mouse_Handler
+	int 33h
+	ret
+Mouse_Init endp
+;===============================================================
+Mouse_Handler:
+	mov ax, 3
+	int 33h
+	mov CURSOR_Y, cx
+	mov CURSOR_X, dx
+	mov MouseClick_flag, 1	
+	retf
 ;===============================================================
 Check_Mouse proc
 	cmp MouseClick_flag, 1
 	jne check_mouse_exit
 	mov MouseClick_flag, 0	
-
 	cmp CURSOR_X, 384
 	jge check_mouse_exit
 	cmp CURSOR_Y, 384
@@ -35,71 +34,80 @@ Check_Mouse proc
 	cmp LAST_CHOSEN_BOX, 255
 	je first_pawn_in_move
 
-	Continue_Moving:
-		; call Get_Board_Number
-		; mov ax, LAST_CHOSEN_BOX
-		; mov bl, 8
-		; div bl
-		; mov dx, ax
-		call Can_Make_Move
-		cmp ax, 1
-		je Possible_Make_Move
+	ret
+	; Continue_Moving:
+	; 	; call Get_Board_Number
+	; 	; mov ax, LAST_CHOSEN_BOX
+	; 	; mov bl, 8
+	; 	; div bl
+	; 	; mov dx, ax
+	; 	call Can_Make_Move
+	; 	cmp ax, 1
+	; 	je Possible_Make_Move
 
-		Cannot_Make_Move:		
-			call Unhighlight_Box
-			mov LAST_CHOSEN_BOX, 255
-			; mov si, offset Cant_Make_Move_Msg
-			; mov di, HB_Pointer
-			; mov cx, 18
-			; repne movsb
-			; mov cx, 9
-			; mov al, ' '
-			; repne stosb
-			; mov Update_History_Buffer_Flag, 1
+	; 	Cannot_Make_Move:		
+	; 		call Unhighlight_Box
+	; 		mov LAST_CHOSEN_BOX, 255
+	; 		; mov si, offset Cant_Make_Move_Msg
+	; 		; mov di, HB_Pointer
+	; 		; mov cx, 18
+	; 		; repne movsb
+	; 		; mov cx, 9
+	; 		; mov al, ' '
+	; 		; repne stosb
+	; 		; mov Update_History_Buffer_Flag, 1
 
-			ret
-		Possible_Make_Move:
-			ret
+	; 		ret
+	; 	Possible_Make_Move:
+	; 		ret
 
 	first_pawn_in_move:
-		call Highlight_Box	
 		call Get_Board_Number	
-		mov LAST_CHOSEN_BOX, ax
+		call Check_If_Your_Colour
+		cmp ax, 1
+		jne check_mouse_exit
+		call Highlight_Box	
 	check_mouse_exit:
 	ret
 Check_Mouse endp	
 ;===============================================================
-Get_Box_From_Coords_In_Ax proc
+Get_Box_From_Coords_In_Ax proc	
+	mov ax, cx
+	mov bx, 384
+	sub bx, ax
+	mov ax, bx
 	mov bl, 48
 	div bl
-	xor bx, bx
-	mov bl, al
-	mov ax, bx
+	mov ah, 0
+	push ax
+	mov ax, dx
+	mov bl, 48
+	div bl
+	pop bx
+	mov ah, bl
+	inc ah 
+	inc al
+	xchg ah, al
 	ret
 Get_Box_From_Coords_In_Ax endp
 ;===============================================================
 Print_Mouse_Coords proc
 	push cs
 	pop es
-
-	mov ax, CURSOR_Y
+	mov cx, CURSOR_X
+	mov dx, CURSOR_Y
 	call Get_Box_From_Coords_In_Ax	
 	add al, '0'
-	mov di, offset BufferString	
-
+	add ah, '0'
+	mov di, offset BufferString		
+	mov bx, ax
+	mov al, bh
 	stosb
-	mov al, ':'
+	mov al, bl
 	stosb	
-
-	mov ax, CURSOR_X
-	call Get_Box_From_Coords_In_Ax	
-	add al, '0'
-	stosb
-
-	mov cx, 24
+	mov cx, 25
 	mov al, ' '
 	repne stosb
-
 	call Add_BufferString_To_History
 	ret
 Print_Mouse_Coords endp
@@ -159,16 +167,7 @@ Highlight_Box proc
 	ret
 Highlight_Box endp
 ;===============================================================
-Get_Board_Number proc
-	mov ax, CURSOR_Y
-	call Get_Box_From_Coords_In_Ax
-	push ax
-	mov ax, CURSOR_X
-	call Get_Box_From_Coords_In_Ax
-	pop bx
-	add ax, bx
-	ret
-Get_Board_Number endp
+
 
 
 
