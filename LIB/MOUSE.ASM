@@ -63,7 +63,7 @@ Check_Mouse proc
 
 	first_pawn_in_move:
 		call Get_Board_Number	
-		call Check_If_Your_Colour
+		call Get_Board_Value_By_AH_AL
 		cmp ax, 1
 		jne check_mouse_exit
 		call Highlight_Box	
@@ -71,7 +71,7 @@ Check_Mouse proc
 	ret
 Check_Mouse endp	
 ;===============================================================
-Get_Box_From_Coords_In_Ax proc	
+Get_Box_From_Coords_In_CX_DX proc	
 	mov ax, cx
 	mov bx, 384
 	sub bx, ax
@@ -89,14 +89,14 @@ Get_Box_From_Coords_In_Ax proc
 	inc al
 	xchg ah, al
 	ret
-Get_Box_From_Coords_In_Ax endp
+Get_Box_From_Coords_In_CX_DX endp
 ;===============================================================
 Print_Mouse_Coords proc
 	push cs
 	pop es
 	mov cx, CURSOR_X
 	mov dx, CURSOR_Y
-	call Get_Box_From_Coords_In_Ax	
+	call Get_Box_From_Coords_In_CX_DX	
 	add al, '0'
 	add ah, '0'
 	mov di, offset BufferString		
@@ -128,6 +128,36 @@ Add_BufferString_To_History proc
 		ret
 Add_BufferString_To_History endp
 ;===============================================================
+Get_Board_Value_By_AH_AL proc
+	mov bx, ax
+	xor ax, ax
+	mov al, bh
+	shr ax, 3
+	mov ah, 0
+	add ax, bx
+	mov bp, ax
+	xor ax, ax
+	mov al, byte ptr BOARD[bp]	
+	ret	
+Get_Board_Value_By_AH_AL endp
+;===============================================================
+Get_Board_Number proc
+	mov cx, CURSOR_X
+	mov dx, CURSOR_Y
+	call Get_Box_From_Coords_In_CX_DX	
+	dec ah
+	dec al
+	mov bl, ah
+	mov ah, 0
+	mov cx, 7
+	sub cx, ax
+	mov ax, cx
+	shl ax, 3
+	mov bh, 0
+	add ax, bx
+	ret
+Get_Board_Number endp
+;===============================================================
 Update_Hist_Buf proc
 	mov ax, 1300h
 	mov bx, 0fh
@@ -151,21 +181,7 @@ Update_Hist_Buf proc
 		jmp bp_ret
 Update_Hist_Buf endp
 ;===============================================================	
-Highlight_Box proc
-	mov ax, CURSOR_Y
-	call Get_Box_From_Coords_In_Ax
-	mov bl, 48
-	mul bl
-	push ax
-	mov ax, CURSOR_X
-	call Get_Box_From_Coords_In_Ax
-	mov bl, 48
-	mul bl
-	mov dx, ax
-	pop cx		
-	call Highlight_Chosen_Box
-	ret
-Highlight_Box endp
+
 ;===============================================================
 
 

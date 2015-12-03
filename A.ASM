@@ -16,33 +16,27 @@ Start:
 	sti
 	jmp Main_Loop
 
-
-Get_Board_Number proc
+Highlight_Box proc
 	mov cx, CURSOR_X
 	mov dx, CURSOR_Y
-	call Get_Box_From_Coords_In_Ax	
+	call Get_Box_From_Coords_In_CX_DX	
 	dec ah
 	dec al
-	mov bl, ah
-	mov ah, 0
-	shl ax, 3
-	mov bh, 0
-	add ax, bx
-	ret
-Get_Board_Number endp
-
-Check_If_Your_Colour proc
-	mov bx, ax
+	mov dl, 7
+	sub dl, al
+	mov al, dl
+	mov bh, ah
+	mov ah, 0	
+	mov bl, 48
+	mul bl
+	mov dx, ax
 	xor ax, ax
 	mov al, bh
-	shr ax, 3
-	mov ah, 0
-	add ax, bx
-	mov bp, ax
-	xor ax, ax
-	lea ax, BOARD[bp]	
-	ret	
-Check_If_Your_Colour endp
+	mul bl
+	mov cx, ax
+	call Highlight_Chosen_Box
+	ret
+Highlight_Box endp
 ;===============================================================
 Init proc 
 	call Init_Graphic	
