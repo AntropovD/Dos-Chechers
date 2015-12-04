@@ -15,32 +15,58 @@ Start:
 		call Keyboard_CheckBuffer
 	sti
 	jmp Main_Loop
-	
-Can_Make_Move proc
+
+
+Repaint_Cell proc 
+	mov chosen_cell_colour, CHESSBOARD_BLACK
+	push cx dx
+	and ch, 0001b
+	and cl, 0001b
+	cmp ch, cl
+	je change_cell_colour
+	mov chosen_cell_colour, CHESSBOARD_WHITE
+	change_cell_colour:
+	mov al, chosen_cell_colour
+	call Change_Colour
+
+	pop dx cx
+	push cx dx
+	dec ch 
+	dec cl
+	xchg cl, ch
+	mov bl, 48
+	xor dx, dx
+	mov dl, ch
+	mov ch, 0
+
 	mov ax, cx
-	call Get_Board_Value_By_AX_to_AL
-	cmp al, Your_Colour
-	jne fail_make_move
-	mov ax, dx
-	call Get_Board_Value_By_AX_to_AL
-	cmp al, 0
-	jne fail_make_move
+	mul bl
+	mov cx, ax
+
+	mov ax, 7
+	sub ax, dx
+	mul bl
+	mov dx, ax
+	
+	mov ax, 2
+	int 33h
+ 	call Draw_Box
+ 	mov ax, 1 
+ 	int 33h
+
+	pop dx cx	
+	ret	
+
+	chosen_cell_colour db ?
+Repaint_Cell endp
+
+Try_Make_Move proc
+	call Repaint_Cell
 
 
 
-
-		mov ax, 1
-		call AddMessage_Can_Make_Move
-		ret
-		
-	fail_make_move:
-		mov ax, 0
-		call AddMessage_Cannot_Make_Move
-		ret
-Can_Make_Move endp
-
-
-
+	ret
+Try_Make_Move endp
 
 
 Check_Mouse proc
@@ -68,12 +94,14 @@ Check_Mouse proc
 		cmp ax, 1
 		je Possible_Make_Move
 
-
 		Cannot_Make_Move:
 			call Unhighlight_Box
 			mov LAST_CHOSEN_BOX, 0ffffh		
 			ret
-		Possible_Make_Move:			
+		Possible_Make_Move:	
+			call Try_Make_Move
+			
+			mov LAST_CHOSEN_BOX, 0ffffh
 			ret
 		Same_Pawn_CLick:
 			call Unhighlight_Box
@@ -91,7 +119,6 @@ Check_Mouse proc
 	check_mouse_exit:
 	ret
 Check_Mouse endp
-
 
 ;===============================================================
 Init proc 

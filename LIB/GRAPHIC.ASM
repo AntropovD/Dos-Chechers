@@ -324,6 +324,9 @@ Highlight_Chosen_Box  proc
 	ret
 Highlight_Chosen_Box endp
 ;===============================================================
+; cx - заданная клекта в формате ah,al -> 1,1
+
+;===============================================================
 Unhighlight_Box proc
 	call Get_Box_From_Coords		
 	call Get_Board_Value_By_AX_to_AL
