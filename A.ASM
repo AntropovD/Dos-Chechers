@@ -35,14 +35,15 @@ Check_Mouse proc
 		mov cx, LAST_CHOSEN_BOX
 		cmp ax, cx
 		je Same_Pawn_CLick
+		
+		call Can_Make_Move
+		cmp ax, 1
+		je Possible_Make_Move
 
-		ret
-		; call Get_Board_Value_By_AH_AL
 
-		; call Can_Make_Move
-		; cmp ax, 1
-		; je Possible_Make_Move
-		Cannot_Make_Move:		
+		Cannot_Make_Move:
+			call Unhighlight_Box
+			mov LAST_CHOSEN_BOX, 0ffffh		
 			ret
 		Possible_Make_Move:			
 			ret
@@ -62,6 +63,40 @@ Check_Mouse proc
 	check_mouse_exit:
 	ret
 Check_Mouse endp
+
+Print_Mouse_Coords proc
+	push cs
+	pop es
+	call Get_Box_From_Coords	
+	add al, '0'
+	add ah, '0'
+	mov di, offset BufferString		
+	mov bx, ax
+	mov al, bh
+	stosb
+	mov al, bl
+	stosb	
+
+	mov si, offset LCH_MSG
+	mov cx, 11 
+	repne movsb
+	mov al, byte ptr LAST_CHOSEN_BOX+1
+	add al, '0'
+	stosb
+	mov al, byte ptr LAST_CHOSEN_BOX
+	add al, '0'
+	stosb
+
+	mov cx, 12
+	mov al, ' '
+	repne stosb
+	call Add_BufferString_To_History
+
+
+	LCH_MSG DB ' Last cell '
+	ret
+Print_Mouse_Coords endp
+
 
 ;===============================================================
 Init proc 

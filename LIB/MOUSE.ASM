@@ -46,24 +46,7 @@ Get_Box_From_Coords proc
 	ret
 Get_Box_From_Coords endp
 ;===============================================================
-Print_Mouse_Coords proc
-	push cs
-	pop es
-	call Get_Box_From_Coords	
-	add al, '0'
-	add ah, '0'
-	mov di, offset BufferString		
-	mov bx, ax
-	mov al, bh
-	stosb
-	mov al, bl
-	stosb	
-	mov cx, 25
-	mov al, ' '
-	repne stosb
-	call Add_BufferString_To_History
-	ret
-Print_Mouse_Coords endp
+
 ;===============================================================
 Add_BufferString_To_History proc
 	mov si, offset BufferString

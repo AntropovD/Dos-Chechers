@@ -335,7 +335,7 @@ Unhighlight_Box proc
 
 	call Change_Colour
 
-	call Get_Box_From_Coords
+	mov ax, LAST_CHOSEN_BOX
 	dec ah
 	dec al
 	mov dl, 7
