@@ -15,7 +15,29 @@ Start:
 		call Keyboard_CheckBuffer
 	sti
 	jmp Main_Loop
+Can_Pawn_Move_like_This_Cx_Dx proc
+	push cx dx
+	add dx, 3030h	
+	sub dh, ch
+	sub dl, cl
+	cmp dl, 30h
+	jl pawn_cant
+	cmp dl, 31h
+	jg pawn_cant
+	cmp dh, 2fh
+	jl pawn_cant
+	cmp dh, 31h
+	jg pawn_cant
 
+
+		mov ax, 1
+		pop dx cx
+		ret
+	pawn_cant:
+		mov ax,0
+		pop dx cx
+		ret	
+Can_Pawn_Move_like_This_Cx_Dx endp
 Check_Mouse proc
 	cmp MouseClick_flag, 1
 	jne check_mouse_exit
@@ -66,7 +88,6 @@ Check_Mouse proc
 	check_mouse_exit:
 	ret
 Check_Mouse endp
-
 ;===============================================================
 Init proc 
 	call Init_Graphic	

@@ -54,7 +54,30 @@ Enter_Pressed proc
 		mov byte ptr [di], 'd'
 		add MsgBuf_Pointer, 3
 
+		mov di, offset Message_Buffer
+		mov ch, byte ptr[di]
+		mov cl, byte ptr[di+1]
+		mov dh, byte ptr[di+3]
+		mov dl, byte ptr[di+4]
+		sub ch, '0'
+		sub cl, '0'
+		sub dh, '0'
+		sub dl, '0'
 
+		call Can_Enemy_Do_Command_Cx_Dx
+		cmp ax, 1
+		jne not_can_execute_command
+
+		can_execute_command:
+		mov di, MsgBuf_Pointer
+		mov byte ptr [di], '+'
+		inc MsgBuf_Pointer
+		jmp entered_move_back
+
+		not_can_execute_command:
+		mov di, MsgBuf_Pointer
+		mov byte ptr [di], '-'
+		inc MsgBuf_Pointer
 		jmp entered_move_back
 
 	Command_msg db 'Cmd'
@@ -148,4 +171,24 @@ Is_Digit_Al proc
 		mov al, 0
 		ret
 Is_Digit_Al endp
+;===============================================================
+; cx - from dx - to
+Can_Enemy_Do_Command_Cx_Dx proc
+	mov ax, cx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 2
+	jne not_can_enemy_do_command
+
+	mov ax, dx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 0
+	jne not_can_enemy_do_command
+	
+	can_enemy_do_command:
+		mov ax, 1	
+		ret
+	not_can_enemy_do_command:
+		mov ax, 0
+		ret
+Can_Enemy_Do_Command_Cx_Dx endp
 ;===============================================================

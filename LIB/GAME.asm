@@ -48,13 +48,9 @@ Can_Make_Move proc
 	cmp al, 0
 	jne fail_make_move
 
-	sub dx, cx
-	cmp dh, 1
-	jg fail_make_move
-	cmp dl, 1
-	jg fail_make_move
-
-		
+	call Can_Pawn_Move_like_This_Cx_Dx
+	cmp ax, 0
+	je fail_make_move		
 		
 		call AddMessage_Can_Make_Move
 		mov ax, 1
@@ -137,6 +133,30 @@ Try_Make_Move proc
 	call Draw_New_Pawn_On_Screen
 	ret
 Try_Make_Move endp
+;===============================================================
+Can_Pawn_Move_like_This_Cx_Dx proc
+	push cx dx
+	add dx, 3030h	
+	sub dh, ch
+	sub dl, cl
+	cmp dl, 30h
+	jl pawn_cant
+	cmp dl, 31h
+	jg pawn_cant
+	cmp dh, 2fh
+	jl pawn_cant
+	cmp dh, 31h
+	jg pawn_cant
+
+
+		mov ax, 1
+		pop dx cx
+		ret
+	pawn_cant:
+		mov ax,0
+		pop dx cx
+		ret	
+Can_Pawn_Move_like_This_Cx_Dx endp
 ;===============================================================
 
 
