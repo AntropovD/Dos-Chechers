@@ -21,7 +21,6 @@ Mouse_Handler:
 	mov MouseClick_flag, 1	
 	retf
 ;===============================================================
-
 Print_Mouse_Coords proc
 	push cs
 	pop es
@@ -54,7 +53,6 @@ Print_Mouse_Coords proc
 	LCH_MSG DB ' Last cell '
 	ret
 Print_Mouse_Coords endp
-
 ;===============================================================
 ; ah, al -> (1,1) - первая клетка
 Get_Box_From_Coords proc	

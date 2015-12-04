@@ -328,7 +328,7 @@ Highlight_Chosen_Box endp
 
 ;===============================================================
 Unhighlight_Box proc
-	call Get_Box_From_Coords		
+	mov ax, LAST_CHOSEN_BOX	
 	call Get_Board_Value_By_AX_to_AL
 	cmp al, 2
 	mov al, PAWN_WHITE	

@@ -77,11 +77,10 @@ Remove_Pawn_From_Board proc
 	ret
 Remove_Pawn_From_Board endp
 ;===============================================================
-;return BOARD[ah*8+al]
+;set BOARD[ah*8+al]
 Set_Board_Value_To_AX_From_DL proc
 	dec ah
 	dec al
-
 	mov bx, ax
 	mov ax, 7
 	sub al, bl
@@ -93,8 +92,51 @@ Set_Board_Value_To_AX_From_DL proc
 	mov byte ptr BOARD[bp], dl	
 	ret	
 Set_Board_Value_To_AX_From_DL endp
-
 ;===============================================================
+Set_New_Pawn_On_Board proc
+	push cx dx
+	mov ax, dx
+	mov dl, Your_Colour
+	call Set_Board_Value_To_AX_From_DL
+	pop dx cx
+	ret
+Set_New_Pawn_On_Board endp
+;===============================================================
+Draw_New_Pawn_On_Screen proc
+	push cx dx
+	mov cx, dx
+	dec ch 
+	dec cl
+	xchg cl, ch
+	mov bl, 48
+	xor dx, dx
+	mov dl, ch
+	mov ch, 0
+	mov ax, cx
+	mul bl
+	mov cx, ax
+	mov ax, 7
+	sub ax, dx
+	mul bl
+	mov dx, ax
+	
+	mov ax, 2
+	int 33h
+ 	call Draw_WhitePawn
+ 	mov ax, 1 
+ 	int 33h
+
+	pop dx cx
+	ret
+Draw_New_Pawn_On_Screen endp
+;===============================================================
+Try_Make_Move proc
+	call Repaint_Cell	
+	call Remove_Pawn_From_Board
+	call Set_New_Pawn_On_Board
+	call Draw_New_Pawn_On_Screen
+	ret
+Try_Make_Move endp
 ;===============================================================
 
 

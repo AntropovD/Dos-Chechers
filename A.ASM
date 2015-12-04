@@ -16,18 +16,6 @@ Start:
 	sti
 	jmp Main_Loop
 
-
-
-Try_Make_Move proc
-	call Repaint_Cell
-	
-	call Remove_Pawn_From_Board
-
-
-	ret
-Try_Make_Move endp
-
-
 Check_Mouse proc
 	cmp MouseClick_flag, 1
 	jne check_mouse_exit

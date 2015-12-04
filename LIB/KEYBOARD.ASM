@@ -27,6 +27,11 @@ Keyboard_CheckBuffer proc
 Keyboard_CheckBuffer endp
 ;===============================================================	
 Enter_Pressed proc
+	call Check_If_Command_Move
+	cmp ax, 1
+	je entered_move_command
+	entered_move_back:
+
 	call Copy_Msg_To_Hist	
 	mov di, offset Message_Buffer
 	mov cx, 54	
@@ -39,6 +44,20 @@ Enter_Pressed proc
 	call Update_Msg_Buf
 	mov MsgBuf_Pointer, offset Message_Buffer	
 	ret
+
+	entered_move_command:
+		mov di, MsgBuf_Pointer
+		mov byte ptr [di], 'C'
+		inc di
+		mov byte ptr [di], 'm'
+		inc di
+		mov byte ptr [di], 'd'
+		add MsgBuf_Pointer, 3
+
+
+		jmp entered_move_back
+
+	Command_msg db 'Cmd'
 Enter_Pressed endp
 ;===============================================================
 Printable_Char proc	
@@ -80,4 +99,53 @@ Copy_Msg_To_Hist proc
 		mov Update_History_Buffer_Flag, 1
 		ret
 Copy_Msg_To_Hist endp
+;===============================================================
+Check_If_Command_Move proc
+	mov bx, MsgBuf_Pointer
+	sub bx, offset Message_Buffer
+	cmp bx, 5
+	jne not_move_command
+	mov di, offset Message_buffer
+
+	mov al, [di]
+	call Is_Digit_Al
+	cmp al, 0
+	je not_move_command
+
+	mov al, [di+1]
+	call Is_Digit_Al
+	cmp al, 0
+	je not_move_command
+
+	cmp byte ptr [di+2], '-'
+	jne not_move_command
+
+	mov al, [di+3]
+	call Is_Digit_Al
+	cmp al, 0
+	je not_move_command
+
+	mov al, [di+4]
+	call Is_Digit_Al
+	cmp al, 0
+	je not_move_command
+
+		mov ax, 1
+		ret	
+	not_move_command:
+		mov ax, 0
+		ret
+Check_If_Command_Move endp
+;===============================================================
+Is_Digit_Al proc
+	cmp al, '1'
+	jl not_digit
+	cmp al, '8'
+	jg not_digit
+		mov al, 1
+		ret
+	not_digit:
+		mov al, 0
+		ret
+Is_Digit_Al endp
 ;===============================================================
