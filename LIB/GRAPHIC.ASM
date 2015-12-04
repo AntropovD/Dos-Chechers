@@ -171,7 +171,6 @@ Draw_Chessboard endp
 			sub dx, 48
 			ret
 	Draw_Box endp
-
 ;===============================================================
 	Draw_WhitePawn proc 
 		mov al, PAWN_WHITE
@@ -217,7 +216,6 @@ Draw_Chessboard endp
 			sub dx, 48
 			ret
 	Draw_Pawn endp
-
 ;===============================================================
 Print_Pixel_If_Not_Zero proc
 	cmp al, 0
@@ -325,7 +323,6 @@ Highlight_Chosen_Box  proc
 Highlight_Chosen_Box endp
 ;===============================================================
 ; cx - заданная клекта в формате ah,al -> 1,1
-
 ;===============================================================
 Unhighlight_Box proc
 	mov ax, LAST_CHOSEN_BOX	
@@ -379,7 +376,7 @@ Highlight_Box proc
 	call Highlight_Chosen_Box
 	ret
 Highlight_Box endp
-;===============================================================\\
+;===============================================================
 Repaint_Cell proc 
 	mov chosen_cell_colour, CHESSBOARD_BLACK
 	push cx dx

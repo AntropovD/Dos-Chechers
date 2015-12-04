@@ -21,64 +21,9 @@ Mouse_Handler:
 	mov MouseClick_flag, 1	
 	retf
 ;===============================================================
-Print_Mouse_Coords proc
+Check_Mouse proc
 	push cs
 	pop es
-	call Get_Box_From_Coords	
-	add al, '0'
-	add ah, '0'
-	mov di, offset BufferString		
-	mov bx, ax
-	mov al, bh
-	stosb
-	mov al, bl
-	stosb	
-
-	mov si, offset LCH_MSG
-	mov cx, 11 
-	repne movsb
-	mov al, byte ptr LAST_CHOSEN_BOX+1
-	add al, '0'
-	stosb
-	mov al, byte ptr LAST_CHOSEN_BOX
-	add al, '0'
-	stosb
-
-	mov cx, 12
-	mov al, ' '
-	repne stosb
-	call Add_BufferString_To_History
-
-
-	LCH_MSG DB ' Last cell '
-	ret
-Print_Mouse_Coords endp
-;===============================================================
-; ah, al -> (1,1) - первая клетка
-Get_Box_From_Coords proc	
-	mov cx, CURSOR_X
-	mov dx, CURSOR_Y	
-	mov ax, cx
-	mov bx, 384
-	sub bx, ax
-	mov ax, bx
-	mov bl, 48
-	div bl
-	mov ah, 0
-	push ax
-	mov ax, dx
-	mov bl, 48
-	div bl
-	pop bx
-	mov ah, bl
-	inc ah 
-	inc al
-	xchg ah, al
-	ret
-Get_Box_From_Coords endp
-;===============================================================
-
-Check_Mouse proc
 	cmp MouseClick_flag, 1
 	jne check_mouse_exit
 	mov MouseClick_flag, 0	
@@ -129,6 +74,62 @@ Check_Mouse proc
 	ret
 Check_Mouse endp
 ;===============================================================
+Print_Mouse_Coords proc
+	push cs
+	pop es
+	call Get_Box_From_Coords	
+	add al, '0'
+	add ah, '0'
+	mov di, offset BufferString		
+	mov bx, ax
+	mov al, bh
+	stosb
+	mov al, bl
+	stosb	
+
+	mov si, offset LCH_MSG
+	mov cx, 11 
+	repne movsb
+	mov al, byte ptr LAST_CHOSEN_BOX+1
+	add al, '0'
+	stosb
+	mov al, byte ptr LAST_CHOSEN_BOX
+	add al, '0'
+	stosb
+
+	mov cx, 12
+	mov al, ' '
+	repne stosb
+	call Add_BufferString_To_History
+	ret
+
+	LCH_MSG DB ' Last cell '	
+Print_Mouse_Coords endp
+;===============================================================
+; ah, al -> (1,1) - первая клетка
+Get_Box_From_Coords proc	
+	mov cx, CURSOR_X
+	mov dx, CURSOR_Y	
+	mov ax, cx
+	mov bx, 384
+	sub bx, ax
+	mov ax, bx
+	mov bl, 48
+	div bl
+	mov ah, 0
+	push ax
+	mov ax, dx
+	mov bl, 48
+	div bl
+	pop bx
+	mov ah, bl
+	inc ah 
+	inc al
+	xchg ah, al
+	ret
+Get_Box_From_Coords endp
+;===============================================================
+;===============================================================
 Add_BufferString_To_History proc
 	mov si, offset BufferString
 	mov di, HB_Pointer
@@ -147,6 +148,7 @@ Add_BufferString_To_History endp
 ;===============================================================
 ;return BOARD[ah*8+al]
 Get_Board_Value_By_AX_to_AL proc
+	push cx dx
 	dec ah
 	dec al
 
@@ -159,6 +161,7 @@ Get_Board_Value_By_AX_to_AL proc
 	add ax, bx
 	mov bp, ax
 	mov al, byte ptr BOARD[bp]	
+	pop dx cx
 	ret	
 Get_Board_Value_By_AX_to_AL endp
 ;===============================================================

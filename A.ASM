@@ -15,79 +15,6 @@ Start:
 		call Keyboard_CheckBuffer
 	sti
 	jmp Main_Loop
-Can_Pawn_Move_like_This_Cx_Dx proc
-	push cx dx
-	add dx, 3030h	
-	sub dh, ch
-	sub dl, cl
-	cmp dl, 30h
-	jl pawn_cant
-	cmp dl, 31h
-	jg pawn_cant
-	cmp dh, 2fh
-	jl pawn_cant
-	cmp dh, 31h
-	jg pawn_cant
-
-
-		mov ax, 1
-		pop dx cx
-		ret
-	pawn_cant:
-		mov ax,0
-		pop dx cx
-		ret	
-Can_Pawn_Move_like_This_Cx_Dx endp
-Check_Mouse proc
-	cmp MouseClick_flag, 1
-	jne check_mouse_exit
-	mov MouseClick_flag, 0	
-
-	cmp CURSOR_X, 384
-	jge check_mouse_exit
-	cmp CURSOR_Y, 384
-	jge check_mouse_exit
-
-	call Print_Mouse_Coords
-	cmp LAST_CHOSEN_BOX, 0ffffh
-	je first_pawn_in_move
-
-	Continue_Moving:
-		call Get_Box_From_Coords
-		mov cx, LAST_CHOSEN_BOX
-		mov dx, ax
-		cmp ax, cx
-		je Same_Pawn_CLick
-		
-		call Can_Make_Move
-		cmp ax, 1
-		je Possible_Make_Move
-
-		Cannot_Make_Move:
-			call Unhighlight_Box
-			mov LAST_CHOSEN_BOX, 0ffffh		
-			ret
-		Possible_Make_Move:	
-			call Try_Make_Move
-			
-			mov LAST_CHOSEN_BOX, 0ffffh
-			ret
-		Same_Pawn_CLick:
-			call Unhighlight_Box
-			mov LAST_CHOSEN_BOX, 0ffffh
-			ret
-
-	first_pawn_in_move:
-		call Get_Box_From_Coords		
-		call Get_Board_Value_By_AX_to_AL
-		cmp al, Your_Colour
-		jne check_mouse_exit
-		call Highlight_Box
-		call Get_Box_From_Coords
-		mov LAST_CHOSEN_BOX, ax			
-	check_mouse_exit:
-	ret
-Check_Mouse endp
 ;===============================================================
 Init proc 
 	call Init_Graphic	
@@ -172,7 +99,7 @@ ConnectionLost_Message proc
 	mov bp, offset connectionLost_msg
 	int 10h
 	;call Set_Cursor_Position_To_Variable
-;	call Exit_Procedure
+ ;	call Exit_Procedure
 	ret
 ConnectionLost_Message endp
 ;===============================================================
@@ -225,9 +152,16 @@ Exit_Procedure endp
 	connectionLost_msg db 'Connection Lost!',0
 	; 1 - белая пешка 
 	; 2 - черная пешка
-	; 3 - выбранная белая
-	; 4 - выбранная черная
 	BOARD 	db 0, 0, 0, 0, 0, 0, 0, 0
+		db 2, 2, 2, 2, 2, 2, 2, 2
+		db 2, 2, 2, 2, 2, 2, 2, 2
+		db 0, 0, 0, 0, 0, 0, 0, 0
+		db 0, 0, 0, 0, 0, 0, 0, 0
+		db 1, 1, 1, 1, 1, 1, 1, 1
+		db 1, 1, 1, 1, 1, 1, 1, 1
+		db 0, 0, 0, 0, 0, 0, 0, 0
+
+	INITIALIZE_BOARD db 0, 0, 0, 0, 0, 0, 0, 0
 		db 2, 2, 2, 2, 2, 2, 2, 2
 		db 2, 2, 2, 2, 2, 2, 2, 2
 		db 0, 0, 0, 0, 0, 0, 0, 0

@@ -72,6 +72,7 @@ Enter_Pressed proc
 		mov di, MsgBuf_Pointer
 		mov byte ptr [di], '+'
 		inc MsgBuf_Pointer
+		call Execute_Enemy_Command_Cx_Dx
 		jmp entered_move_back
 
 		not_can_execute_command:
@@ -82,6 +83,11 @@ Enter_Pressed proc
 
 	Command_msg db 'Cmd'
 Enter_Pressed endp
+;===============================================================
+Execute_Enemy_Command_Cx_Dx proc
+	
+	ret
+Execute_Enemy_Command_Cx_Dx endp
 ;===============================================================
 Printable_Char proc	
 	mov bx, offset Message_Buffer
@@ -174,6 +180,7 @@ Is_Digit_Al endp
 ;===============================================================
 ; cx - from dx - to
 Can_Enemy_Do_Command_Cx_Dx proc
+	; Проверка board[cx] = цвет, board[dx] = пусто
 	mov ax, cx
 	call Get_Board_Value_By_AX_to_AL
 	cmp al, 2
@@ -182,6 +189,10 @@ Can_Enemy_Do_Command_Cx_Dx proc
 	mov ax, dx
 	call Get_Board_Value_By_AX_to_AL
 	cmp al, 0
+	jne not_can_enemy_do_command 
+	; Проверка расстояний
+	call Can_Enemy_Pawn_Move_Like_This_Cx_Dx
+	cmp ax, 1
 	jne not_can_enemy_do_command
 	
 	can_enemy_do_command:
@@ -191,4 +202,31 @@ Can_Enemy_Do_Command_Cx_Dx proc
 		mov ax, 0
 		ret
 Can_Enemy_Do_Command_Cx_Dx endp
+;===============================================================
+Can_Enemy_Pawn_Move_Like_This_Cx_Dx proc
+	push cx dx
+	add dx, 3030h	
+	sub dh, ch
+	sub dl, cl
+
+	cmp dl, 2fh
+	jl en_pawn_cant
+	cmp dl, 30h
+	jg en_pawn_cant
+	cmp dh, 2fh
+	jl en_pawn_cant
+	cmp dh, 31h
+	jg en_pawn_cant
+
+		mov ax, 1
+		pop dx cx
+		ret
+	en_pawn_cant:
+		mov ax,0
+		pop dx cx
+		ret	
+	ret
+Can_Enemy_Pawn_Move_Like_This_Cx_Dx endp
+;===============================================================
+;===============================================================
 ;===============================================================
