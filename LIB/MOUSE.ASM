@@ -21,57 +21,12 @@ Mouse_Handler:
 	mov MouseClick_flag, 1	
 	retf
 ;===============================================================
-Check_Mouse proc
-	cmp MouseClick_flag, 1
-	jne check_mouse_exit
-	mov MouseClick_flag, 0	
-	cmp CURSOR_X, 384
-	jge check_mouse_exit
-	cmp CURSOR_Y, 384
-	jge check_mouse_exit
 
-	call Print_Mouse_Coords
-	cmp LAST_CHOSEN_BOX, 255
-	je first_pawn_in_move
-
-	ret
-	; Continue_Moving:
-	; 	; call Get_Board_Number
-	; 	; mov ax, LAST_CHOSEN_BOX
-	; 	; mov bl, 8
-	; 	; div bl
-	; 	; mov dx, ax
-	; 	call Can_Make_Move
-	; 	cmp ax, 1
-	; 	je Possible_Make_Move
-
-	; 	Cannot_Make_Move:		
-	; 		call Unhighlight_Box
-	; 		mov LAST_CHOSEN_BOX, 255
-	; 		; mov si, offset Cant_Make_Move_Msg
-	; 		; mov di, HB_Pointer
-	; 		; mov cx, 18
-	; 		; repne movsb
-	; 		; mov cx, 9
-	; 		; mov al, ' '
-	; 		; repne stosb
-	; 		; mov Update_History_Buffer_Flag, 1
-
-	; 		ret
-	; 	Possible_Make_Move:
-	; 		ret
-
-	first_pawn_in_move:
-		call Get_Board_Number	
-		call Get_Board_Value_By_AH_AL
-		cmp ax, 1
-		jne check_mouse_exit
-		call Highlight_Box	
-	check_mouse_exit:
-	ret
-Check_Mouse endp	
 ;===============================================================
-Get_Box_From_Coords_In_CX_DX proc	
+; ah, al -> (1,1) - первая клетка
+Get_Box_From_Coords proc	
+	mov cx, CURSOR_X
+	mov dx, CURSOR_Y	
 	mov ax, cx
 	mov bx, 384
 	sub bx, ax
@@ -89,14 +44,12 @@ Get_Box_From_Coords_In_CX_DX proc
 	inc al
 	xchg ah, al
 	ret
-Get_Box_From_Coords_In_CX_DX endp
+Get_Box_From_Coords endp
 ;===============================================================
 Print_Mouse_Coords proc
 	push cs
 	pop es
-	mov cx, CURSOR_X
-	mov dx, CURSOR_Y
-	call Get_Box_From_Coords_In_CX_DX	
+	call Get_Box_From_Coords	
 	add al, '0'
 	add ah, '0'
 	mov di, offset BufferString		
@@ -128,35 +81,22 @@ Add_BufferString_To_History proc
 		ret
 Add_BufferString_To_History endp
 ;===============================================================
-Get_Board_Value_By_AH_AL proc
-	mov bx, ax
-	xor ax, ax
-	mov al, bh
-	shr ax, 3
-	mov ah, 0
-	add ax, bx
-	mov bp, ax
-	xor ax, ax
-	mov al, byte ptr BOARD[bp]	
-	ret	
-Get_Board_Value_By_AH_AL endp
-;===============================================================
-Get_Board_Number proc
-	mov cx, CURSOR_X
-	mov dx, CURSOR_Y
-	call Get_Box_From_Coords_In_CX_DX	
+;return BOARD[ah*8+al]
+Get_Board_Value_By_AX_to_AL proc
 	dec ah
 	dec al
-	mov bl, ah
-	mov ah, 0
-	mov cx, 7
-	sub cx, ax
-	mov ax, cx
+
+	mov bx, ax
+	mov ax, 7
+	sub al, bl
 	shl ax, 3
-	mov bh, 0
+	mov bl, 0
+	xchg bl, bh	
 	add ax, bx
-	ret
-Get_Board_Number endp
+	mov bp, ax
+	mov al, byte ptr BOARD[bp]	
+	ret	
+Get_Board_Value_By_AX_to_AL endp
 ;===============================================================
 Update_Hist_Buf proc
 	mov ax, 1300h
@@ -181,37 +121,10 @@ Update_Hist_Buf proc
 		jmp bp_ret
 Update_Hist_Buf endp
 ;===============================================================	
-
-;===============================================================
-
-
-
-
-	LAST_CHOSEN_BOX db 255
+	LAST_CHOSEN_BOX dw 0ffffh
 	
 	Cant_Make_Move_Msg db 'You cant make move',0
 	CURSOR_X dw ?
 	CURSOR_Y dw ?
 	MouseClick_flag db 0
 	BufferString db 27 dup(' ')
-;===============================================================
-	;HEX_SYMBOLS db '0123456789ABCDEF'
-	; Print_AX proc
-	; 	mov bx, ax
-	; 	mov ah, 2
-	; 	mov cl, 16
-	; 	_print_loop_bx:
-	; 		sub cl, 4
-	; 		mov si, bx
-	; 		shr si, cl
-	; 		and si, 0Fh
-	; 		mov dl, HEX_SYMBOLS[si]
-	; 		cmp dl, '0'
-	; 		je $+4
-	; 		int 21h
-
-	; 		cmp cl, 0
-	; 		jnz _print_loop_bx
-	; 	ret
-	; Print_AX endp
-;===============================================================

@@ -137,89 +137,87 @@ Draw_Chessboard proc
 		jmp no_pawn_in_cell
 Draw_Chessboard endp
 ;===============================================================
-Draw_WhiteBox proc 
-	mov al, CHESSBOARD_WHITE
-	call Change_Colour
-	call Draw_Box
-	ret
-Draw_WhiteBox endp
-;===============================================================
-Draw_BlackBox proc 
-	mov al, CHESSBOARD_BLACK	
-	call Change_Colour
-	call Draw_Box
-	ret
-Draw_BlackBox endp	
-;===============================================================
-Draw_Box proc 
-	mov X, 0
-	mov Y, 0
-	draw_box_loop:
-		call Print_Pixel
-		inc cx
-		inc Y
-		cmp Y, 48
-		je draw_box_new_line
-		jmp draw_box_loop
-	draw_box_new_line:
-		mov Y, 0
-		sub cx, 48
-		inc dx
-		inc X
-		cmp X, 48
-		je draw_box_exit
-		jmp draw_box_loop
-	draw_box_exit:
-		sub dx, 48
+	Draw_WhiteBox proc 
+		mov al, CHESSBOARD_WHITE
+		call Change_Colour
+		call Draw_Box
 		ret
-Draw_Box endp
-;===============================================================
-Draw_WhitePawn proc 
-	mov al, PAWN_WHITE
-	call Change_Colour
-	call Draw_Pawn
-	ret	
-Draw_WhitePawn endp
-;===============================================================
-Draw_BlackPawn proc
-	mov al, PAWN_BLACK
-	call Change_Colour
-	call Draw_Pawn
-	ret
-Draw_BlackPawn endp
-;===============================================================
-Draw_Pawn proc
-	mov X, 0
-	mov Y, 0
-	mov si, offset Pawn_Buffer
-	draw_pawn_loop:
-		lodsb
-		mov Temp, al
-		shr al, 4
-		call Print_Pixel_If_Not_Zero
-		inc cx
-		mov al, Temp
-		and al, 01111b
-		call Print_Pixel_If_Not_Zero
-		inc cx
-		inc Y
-		cmp Y, 24
-		je draw_pawn_new_line
-		jmp draw_pawn_loop
-
-	draw_pawn_new_line:
-		sub cx, 48
-		inc dx
-		inc X
-		mov Y, 0
-		cmp X, 48
-		je draw_pawn_exit
-		jmp draw_pawn_loop
-
-	draw_pawn_exit:
-		sub dx, 48
+	Draw_WhiteBox endp
+	Draw_BlackBox proc 
+		mov al, CHESSBOARD_BLACK	
+		call Change_Colour
+		call Draw_Box
 		ret
-Draw_Pawn endp
+	Draw_BlackBox endp	
+	Draw_Box proc 
+		mov X, 0
+		mov Y, 0
+		draw_box_loop:
+			call Print_Pixel
+			inc cx
+			inc Y
+			cmp Y, 48
+			je draw_box_new_line
+			jmp draw_box_loop
+		draw_box_new_line:
+			mov Y, 0
+			sub cx, 48
+			inc dx
+			inc X
+			cmp X, 48
+			je draw_box_exit
+			jmp draw_box_loop
+		draw_box_exit:
+			sub dx, 48
+			ret
+	Draw_Box endp
+
+;===============================================================
+	Draw_WhitePawn proc 
+		mov al, PAWN_WHITE
+		call Change_Colour
+		call Draw_Pawn
+		ret	
+	Draw_WhitePawn endp
+	Draw_BlackPawn proc
+		mov al, PAWN_BLACK
+		call Change_Colour
+		call Draw_Pawn
+		ret
+	Draw_BlackPawn endp
+	Draw_Pawn proc
+		mov X, 0
+		mov Y, 0
+		mov si, offset Pawn_Buffer
+		draw_pawn_loop:
+			lodsb
+			mov Temp, al
+			shr al, 4
+			call Print_Pixel_If_Not_Zero
+			inc cx
+			mov al, Temp
+			and al, 01111b
+			call Print_Pixel_If_Not_Zero
+			inc cx
+			inc Y
+			cmp Y, 24
+			je draw_pawn_new_line
+			jmp draw_pawn_loop
+
+		draw_pawn_new_line:
+			sub cx, 48
+			inc dx
+			inc X
+			mov Y, 0
+			cmp X, 48
+			je draw_pawn_exit
+			jmp draw_pawn_loop
+
+		draw_pawn_exit:
+			sub dx, 48
+			ret
+	Draw_Pawn endp
+
 ;===============================================================
 Print_Pixel_If_Not_Zero proc
 	cmp al, 0
@@ -313,9 +311,8 @@ Msg_Buf_Clear proc
 	ret
 Msg_Buf_Clear endp
 ;===============================================================
+; Change_Colour before using
 Highlight_Chosen_Box  proc
-	mov al, 4
-	call Change_Colour
 	call Print_Pixel
 
 	mov ax, 2
@@ -328,13 +325,58 @@ Highlight_Chosen_Box  proc
 Highlight_Chosen_Box endp
 ;===============================================================
 Unhighlight_Box proc
-	mov bl, LAST_CHOSEN_BOX
+	call Get_Box_From_Coords		
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 2
+	mov al, PAWN_WHITE	
+	jne black_pawn_unhighlight
+	mov al, PAWN_BLACK
+	black_pawn_unhighlight:
 
+	call Change_Colour
 
+	call Get_Box_From_Coords
+	dec ah
+	dec al
+	mov dl, 7
+	sub dl, al
+	mov al, dl
+	mov bh, ah
+	mov ah, 0	
+	mov bl, 48
+	mul bl
+	mov dx, ax
+	xor ax, ax
+	mov al, bh
+	mul bl
+	mov cx, ax
+	call Highlight_Chosen_Box
 	ret
 Unhighlight_Box endp
 ;===============================================================
-Variables:
+Highlight_Box proc
+	call Get_Box_From_Coords
+	dec ah
+	dec al
+	mov dl, 7
+	sub dl, al
+	mov al, dl
+	mov bh, ah
+	mov ah, 0	
+	mov bl, 48
+	mul bl
+	mov dx, ax
+	xor ax, ax
+	mov al, bh
+	mul bl
+	mov cx, ax
+	mov al, 4
+	call Change_Colour
+
+	call Highlight_Chosen_Box
+	ret
+Highlight_Box endp
+;===============================================================
 	Index db ?
 	Old_Videomode db ?
 	X dw ?
@@ -361,8 +403,7 @@ Variables:
 	MsgBuf_Pointer dw 0
 	Message_Buffer db 48 dup (32)
 	Clear_Buffer db 48 dup (32)
-;===============================================================
-Constants:
+
 	CHESSBOARD_BLACK equ 6
 	CHESSBOARD_WHITE equ 14
 	PAWN_WHITE equ 7

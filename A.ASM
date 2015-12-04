@@ -10,33 +10,59 @@ Start:
 		call Check_History_Buffer
 		call Check_Mouse
 		call Check_Ticks_Counts
-	;	call Check_Com_Port
+		;call Check_Com_Port
 	not_second_tick:
 		call Keyboard_CheckBuffer
 	sti
 	jmp Main_Loop
 
-Highlight_Box proc
-	mov cx, CURSOR_X
-	mov dx, CURSOR_Y
-	call Get_Box_From_Coords_In_CX_DX	
-	dec ah
-	dec al
-	mov dl, 7
-	sub dl, al
-	mov al, dl
-	mov bh, ah
-	mov ah, 0	
-	mov bl, 48
-	mul bl
-	mov dx, ax
-	xor ax, ax
-	mov al, bh
-	mul bl
-	mov cx, ax
-	call Highlight_Chosen_Box
+Check_Mouse proc
+	cmp MouseClick_flag, 1
+	jne check_mouse_exit
+	mov MouseClick_flag, 0	
+
+	cmp CURSOR_X, 384
+	jge check_mouse_exit
+	cmp CURSOR_Y, 384
+	jge check_mouse_exit
+
+	call Print_Mouse_Coords
+	cmp LAST_CHOSEN_BOX, 0ffffh
+	je first_pawn_in_move
+
+	Continue_Moving:
+		call Get_Box_From_Coords
+		mov cx, LAST_CHOSEN_BOX
+		cmp ax, cx
+		je Same_Pawn_CLick
+
+		ret
+		; call Get_Board_Value_By_AH_AL
+
+		; call Can_Make_Move
+		; cmp ax, 1
+		; je Possible_Make_Move
+		Cannot_Make_Move:		
+			ret
+		Possible_Make_Move:			
+			ret
+		Same_Pawn_CLick:
+			call Unhighlight_Box
+			mov LAST_CHOSEN_BOX, 0ffffh
+			ret
+
+	first_pawn_in_move:
+		call Get_Box_From_Coords		
+		call Get_Board_Value_By_AX_to_AL
+		cmp al, Your_Colour
+		jne check_mouse_exit
+		call Highlight_Box
+		call Get_Box_From_Coords
+		mov LAST_CHOSEN_BOX, ax			
+	check_mouse_exit:
 	ret
-Highlight_Box endp
+Check_Mouse endp
+
 ;===============================================================
 Init proc 
 	call Init_Graphic	
