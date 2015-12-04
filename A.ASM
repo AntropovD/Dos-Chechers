@@ -15,6 +15,33 @@ Start:
 		call Keyboard_CheckBuffer
 	sti
 	jmp Main_Loop
+	
+Can_Make_Move proc
+	mov ax, cx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, Your_Colour
+	jne fail_make_move
+	mov ax, dx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 0
+	jne fail_make_move
+
+
+
+
+		mov ax, 1
+		call AddMessage_Can_Make_Move
+		ret
+		
+	fail_make_move:
+		mov ax, 0
+		call AddMessage_Cannot_Make_Move
+		ret
+Can_Make_Move endp
+
+
+
+
 
 Check_Mouse proc
 	cmp MouseClick_flag, 1
@@ -33,6 +60,7 @@ Check_Mouse proc
 	Continue_Moving:
 		call Get_Box_From_Coords
 		mov cx, LAST_CHOSEN_BOX
+		mov dx, ax
 		cmp ax, cx
 		je Same_Pawn_CLick
 		
@@ -63,39 +91,6 @@ Check_Mouse proc
 	check_mouse_exit:
 	ret
 Check_Mouse endp
-
-Print_Mouse_Coords proc
-	push cs
-	pop es
-	call Get_Box_From_Coords	
-	add al, '0'
-	add ah, '0'
-	mov di, offset BufferString		
-	mov bx, ax
-	mov al, bh
-	stosb
-	mov al, bl
-	stosb	
-
-	mov si, offset LCH_MSG
-	mov cx, 11 
-	repne movsb
-	mov al, byte ptr LAST_CHOSEN_BOX+1
-	add al, '0'
-	stosb
-	mov al, byte ptr LAST_CHOSEN_BOX
-	add al, '0'
-	stosb
-
-	mov cx, 12
-	mov al, ' '
-	repne stosb
-	call Add_BufferString_To_History
-
-
-	LCH_MSG DB ' Last cell '
-	ret
-Print_Mouse_Coords endp
 
 
 ;===============================================================
