@@ -17,52 +17,11 @@ Start:
 	jmp Main_Loop
 
 
-Repaint_Cell proc 
-	mov chosen_cell_colour, CHESSBOARD_BLACK
-	push cx dx
-	and ch, 0001b
-	and cl, 0001b
-	cmp ch, cl
-	je change_cell_colour
-	mov chosen_cell_colour, CHESSBOARD_WHITE
-	change_cell_colour:
-	mov al, chosen_cell_colour
-	call Change_Colour
-
-	pop dx cx
-	push cx dx
-	dec ch 
-	dec cl
-	xchg cl, ch
-	mov bl, 48
-	xor dx, dx
-	mov dl, ch
-	mov ch, 0
-
-	mov ax, cx
-	mul bl
-	mov cx, ax
-
-	mov ax, 7
-	sub ax, dx
-	mul bl
-	mov dx, ax
-	
-	mov ax, 2
-	int 33h
- 	call Draw_Box
- 	mov ax, 1 
- 	int 33h
-
-	pop dx cx	
-	ret	
-
-	chosen_cell_colour db ?
-Repaint_Cell endp
 
 Try_Make_Move proc
 	call Repaint_Cell
-
+	
+	call Remove_Pawn_From_Board
 
 
 	ret

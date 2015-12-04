@@ -68,7 +68,32 @@ Can_Make_Move proc
 		ret
 Can_Make_Move endp
 ;===============================================================
+Remove_Pawn_From_Board proc
+	push cx dx
+	mov ax, cx
+	mov dl, 0
+	call Set_Board_Value_To_AX_From_DL
+	pop dx cx
+	ret
+Remove_Pawn_From_Board endp
 ;===============================================================
+;return BOARD[ah*8+al]
+Set_Board_Value_To_AX_From_DL proc
+	dec ah
+	dec al
+
+	mov bx, ax
+	mov ax, 7
+	sub al, bl
+	shl ax, 3
+	mov bl, 0
+	xchg bl, bh	
+	add ax, bx
+	mov bp, ax
+	mov byte ptr BOARD[bp], dl	
+	ret	
+Set_Board_Value_To_AX_From_DL endp
+
 ;===============================================================
 ;===============================================================
 
