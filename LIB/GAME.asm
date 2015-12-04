@@ -88,17 +88,20 @@ Set_Board_Value_To_AX_From_DL proc
 	ret	
 Set_Board_Value_To_AX_From_DL endp
 ;===============================================================
+;bl-colour
 Set_New_Pawn_On_Board proc
 	push cx dx
 	mov ax, dx
-	mov dl, Your_Colour
+	mov dl, bl
 	call Set_Board_Value_To_AX_From_DL
 	pop dx cx
 	ret
 Set_New_Pawn_On_Board endp
 ;===============================================================
+;bl-colour
 Draw_New_Pawn_On_Screen proc
 	push cx dx
+	push bx
 	mov cx, dx
 	dec ch 
 	dec cl
@@ -117,7 +120,10 @@ Draw_New_Pawn_On_Screen proc
 	
 	mov ax, 2
 	int 33h
- 	call Draw_WhitePawn
+	pop bx
+	mov al, bl
+	call Change_Colour
+ 	call Draw_Pawn
  	mov ax, 1 
  	int 33h
 
@@ -128,7 +134,9 @@ Draw_New_Pawn_On_Screen endp
 Try_Make_Move proc
 	call Repaint_Cell	
 	call Remove_Pawn_From_Board
+	mov bl, Your_Colour
 	call Set_New_Pawn_On_Board
+	mov bl, PAWN_WHITE
 	call Draw_New_Pawn_On_Screen
 	ret
 Try_Make_Move endp

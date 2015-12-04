@@ -15,6 +15,17 @@ Start:
 		call Keyboard_CheckBuffer
 	sti
 	jmp Main_Loop
+
+Execute_Enemy_Command_Cx_Dx proc
+	call Repaint_Cell
+	call Remove_Pawn_From_Board	
+	mov bl, 2
+	call Set_New_Pawn_On_Board
+	mov bl, PAWN_BLACK
+	call Draw_New_Pawn_On_Screen
+	ret
+Execute_Enemy_Command_Cx_Dx endp
+
 ;===============================================================
 Init proc 
 	call Init_Graphic	

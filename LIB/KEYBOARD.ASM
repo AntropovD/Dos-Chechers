@@ -84,10 +84,7 @@ Enter_Pressed proc
 	Command_msg db 'Cmd'
 Enter_Pressed endp
 ;===============================================================
-Execute_Enemy_Command_Cx_Dx proc
-	
-	ret
-Execute_Enemy_Command_Cx_Dx endp
+
 ;===============================================================
 Printable_Char proc	
 	mov bx, offset Message_Buffer
