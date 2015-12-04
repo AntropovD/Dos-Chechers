@@ -1,4 +1,5 @@
 ;===============================================================
+
 Keyboard_CheckBuffer proc 
 	mov ah, 01
 	int 16h
@@ -9,6 +10,8 @@ Keyboard_CheckBuffer proc
 	je esc_pressed	
 	cmp ah, 1ch
 	je _enter_pressed
+	cmp ah, 0eh
+	je _backspace_pressed
 	cmp al, 20h
 	jge printable_char_pressed
 
@@ -21,10 +24,28 @@ Keyboard_CheckBuffer proc
 	_enter_pressed:
 		call Enter_Pressed
 		jmp check_buffer_exit
+	_backspace_pressed:
+		call Backspace_Pressed
+		jmp check_buffer_exit
 	printable_char_pressed:
 		call Printable_Char
 		jmp check_buffer_exit
 Keyboard_CheckBuffer endp
+;===============================================================
+Backspace_Pressed proc
+	mov bx, offset Message_Buffer
+	mov di, MsgBuf_Pointer
+	cmp di, bx
+	je backsp_ret
+
+	dec di
+	mov byte ptr [di], ' '
+	dec MsgBuf_Pointer
+	call Msg_Buf_Clear
+	call Update_Msg_Buf
+	backsp_ret:
+	ret
+Backspace_Pressed endp
 ;===============================================================	
 Enter_Pressed proc
 	call Check_If_Command_Move
@@ -84,9 +105,17 @@ Enter_Pressed proc
 	Command_msg db 'Cmd'
 Enter_Pressed endp
 ;===============================================================
-
+Execute_Enemy_Command_Cx_Dx proc
+	call Repaint_Cell
+	call Remove_Pawn_From_Board	
+	mov bl, 2
+	call Set_New_Pawn_On_Board
+	mov bl, PAWN_BLACK
+	call Draw_New_Pawn_On_Screen
+	ret
+Execute_Enemy_Command_Cx_Dx endp
 ;===============================================================
-Printable_Char proc	
+Printable_Char proc
 	mov bx, offset Message_Buffer
 	add bx, 45	
 	mov di, MsgBuf_Pointer
@@ -100,7 +129,7 @@ Printable_Char proc
 	ret
 Printable_Char endp
 ;===============================================================
-Copy_Msg_To_Hist proc		
+Copy_Msg_To_Hist proc
 	mov si, offset Message_Buffer
 	mov di, HB_Pointer	
 	mov cx, 27
