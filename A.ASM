@@ -16,7 +16,17 @@ Start:
 	sti
 	jmp Main_Loop
 
-
+Try_Cut_Pawn proc
+	call Repaint_Cell	
+	call Repaint_Pawned_Cell
+	call Remove_Pawn_From_Board
+	call Remove_Pawned_Pawn_From_Board
+	mov bl, Your_Colour
+	call Set_New_Pawn_On_Board
+	mov bl, PAWN_WHITE
+	call Draw_New_Pawn_On_Screen
+	ret
+Try_Cut_Pawn endp
 ;===============================================================
 Init proc 
 	call Init_Graphic	

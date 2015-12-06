@@ -71,6 +71,15 @@ Remove_Pawn_From_Board proc
 	ret
 Remove_Pawn_From_Board endp
 ;===============================================================
+Remove_Pawned_Pawn_From_Board proc
+	push cx dx
+	mov ax, Last_Pawned_Cell
+	mov dl, 0
+	call Set_Board_Value_To_AX_From_DL
+	pop dx cx
+	ret
+Remove_Pawned_Pawn_From_Board endp
+;===============================================================
 ;set BOARD[ah*8+al]
 Set_Board_Value_To_AX_From_DL proc
 	dec ah
@@ -198,9 +207,7 @@ Can_Pawn_Сut_Like_This_Cx_Dx proc
 		pop dx cx	
 		ret
 Can_Pawn_Сut_Like_This_Cx_Dx endp
-
 ;===============================================================
-
 Can_Cut_Pawn proc
 	push cx dx
 
@@ -220,6 +227,7 @@ Can_Cut_Pawn proc
 	jne fail_cut
 
 	mov ax, bx
+	mov Last_Pawned_Cell, bx
 	call Get_Board_Value_By_AX_to_AL
 	cmp al, 2
 	jne fail_cut
@@ -235,7 +243,10 @@ Can_Cut_Pawn proc
 		pop dx cx
 		ret	
 Can_Cut_Pawn endp
-
+;===============================================================
+Last_Pawned_Cell dw 0
+;===============================================================
+;===============================================================
 ;===============================================================
 AddMessage_Cannot_Cut proc
 	mov di, offset BufferString

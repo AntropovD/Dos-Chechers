@@ -377,6 +377,15 @@ Highlight_Box proc
 	ret
 Highlight_Box endp
 ;===============================================================
+Repaint_Pawned_Cell proc
+	push cx
+	mov cx, Last_Pawned_Cell
+	call Repaint_Cell
+	pop cx	
+	ret
+Repaint_Pawned_Cell endp
+;===============================================================
+; cx
 Repaint_Cell proc 
 	mov chosen_cell_colour, CHESSBOARD_BLACK
 	push cx dx
