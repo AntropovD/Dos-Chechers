@@ -15,18 +15,41 @@ Start:
 		call Keyboard_CheckBuffer
 	sti
 	jmp Main_Loop
+Can_Cut_Pawn proc
+	push cx dx
 
-Try_Cut_Pawn proc
-	call Repaint_Cell	
-	call Repaint_Pawned_Cell
-	call Remove_Pawn_From_Board
-	call Remove_Pawned_Pawn_From_Board
-	mov bl, Your_Colour
-	call Set_New_Pawn_On_Board
-	mov bl, PAWN_WHITE
-	call Draw_New_Pawn_On_Screen
-	ret
-Try_Cut_Pawn endp
+	mov ax, cx
+	;твой цвет?
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 1
+	jne fail_cut
+	; пешка врага
+	mov ax, dx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 0
+	jne fail_cut
+
+	call Can_Pawn_Сut_like_This_Cx_Dx
+	cmp ax, 1
+	jne fail_cut
+
+	mov ax, bx
+	mov Last_Pawned_Cell, bx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 2
+	jne fail_cut
+
+	good_cut:
+		call AddMessage_Can_Cut
+		mov ax, 1
+		pop dx cx
+		ret
+	fail_cut:
+		call AddMessage_Cannot_Cut
+		mov ax, 0
+		pop dx cx
+		ret	
+Can_Cut_Pawn endp
 ;===============================================================
 Init proc 
 	call Init_Graphic	
