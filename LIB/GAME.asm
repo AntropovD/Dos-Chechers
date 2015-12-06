@@ -1,7 +1,5 @@
 ;===============================================================
 ; cx - from, dx - to
-
-
 ;===============================================================
 AddMessage_Cannot_Make_Move proc
 	mov di, offset BufferString
@@ -50,7 +48,8 @@ Can_Make_Move proc
 	call Can_Pawn_Move_like_This_Cx_Dx
 	cmp ax, 0
 	je fail_make_move		
-		
+	
+	success_make_move:
 		call AddMessage_Can_Make_Move
 		mov ax, 1
 		pop dx cx
@@ -165,6 +164,108 @@ Can_Pawn_Move_like_This_Cx_Dx proc
 		ret	
 Can_Pawn_Move_like_This_Cx_Dx endp
 ;===============================================================
+Can_Pawn_Сut_Like_This_Cx_Dx proc
+	push cx dx
+	add dx, 3030h
+	sub dx, cx
+	mov ax, dx
+	mov bx, cx
+	cmp ax, 3032h
+	je _good_cut_1
+	cmp ax, 2e30h
+	je _good_cut_2
+	cmp ax, 3230h
+	je _good_cut_3
+
+	
+	bad_cut:
+		mov ax, 0
+		pop dx cx
+		ret
+	_good_cut_1:
+		mov ax, 1
+		add bx, 01h
+		pop dx cx	
+		ret
+	_good_cut_2:
+		mov ax, 1
+		sub bh, 01
+		pop dx cx	
+		ret
+	_good_cut_3:
+		mov ax, 1
+		sub bl, 01
+		pop dx cx	
+		ret
+Can_Pawn_Сut_Like_This_Cx_Dx endp
+
+;===============================================================
+
+Can_Cut_Pawn proc
+	push cx dx
+
+	mov ax, cx
+	;твой цвет?
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 1
+	jne fail_cut
+	; пешка врага
+	mov ax, dx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 0
+	jne fail_cut
+
+	call Can_Pawn_Сut_like_This_Cx_Dx
+	cmp ax, 1
+	jne fail_cut
+
+	mov ax, bx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 2
+	jne fail_cut
+
+	good_cut:
+		call AddMessage_Can_Cut
+		mov ax, 1
+		pop dx cx
+		ret
+	fail_cut:
+		call AddMessage_Cannot_Cut
+		mov ax, 0
+		pop dx cx
+		ret	
+Can_Cut_Pawn endp
+
+;===============================================================
+AddMessage_Cannot_Cut proc
+	mov di, offset BufferString
+	mov si, offset cannot_cut_msg
+	mov cx, 10
+	repne movsb
+
+	mov al, ' '
+	mov cx, 17
+	repne stosb
+
+	call Add_BufferString_To_History
+	ret
+	cannot_cut_msg db 'wrong cut '	
+AddMessage_Cannot_Cut endp
+;===============================================================
+AddMessage_Can_Cut proc
+	mov di, offset BufferString
+	mov si, offset can_cut_msg
+	mov cx, 10
+	repne movsb
+
+	mov al, ' '
+	mov cx, 17
+	repne stosb
+
+	call Add_BufferString_To_History
+	ret
+	can_cut_msg db 'goood cut '	
+AddMessage_Can_Cut endp
 
 
 

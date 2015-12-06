@@ -21,6 +21,7 @@ Mouse_Handler:
 	mov MouseClick_flag, 1	
 	retf
 ;===============================================================
+
 Check_Mouse proc
 	push cs
 	pop es
@@ -48,19 +49,26 @@ Check_Mouse proc
 		cmp ax, 1
 		je Possible_Make_Move
 
+		call Can_Cut_Pawn
+		cmp ax, 1
+		je Possible_Cut_Pawn
+
 		Cannot_Make_Move:
-			call Unhighlight_Box
-			mov LAST_CHOSEN_BOX, 0ffffh		
-			ret
-		Possible_Make_Move:	
-			call Try_Make_Move
-			
-			mov LAST_CHOSEN_BOX, 0ffffh
-			ret
 		Same_Pawn_CLick:
 			call Unhighlight_Box
 			mov LAST_CHOSEN_BOX, 0ffffh
 			ret
+			
+		Possible_Make_Move:	
+			call Try_Make_Move			
+			mov LAST_CHOSEN_BOX, 0ffffh
+			ret
+
+		Possible_Cut_Pawn:
+			call Unhighlight_Box
+			mov LAST_CHOSEN_BOX, 0ffffh
+			ret
+		
 
 	first_pawn_in_move:
 		call Get_Box_From_Coords		

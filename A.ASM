@@ -15,6 +15,8 @@ Start:
 		call Keyboard_CheckBuffer
 	sti
 	jmp Main_Loop
+
+
 ;===============================================================
 Init proc 
 	call Init_Graphic	
@@ -176,4 +178,3 @@ Exit_Procedure endp
 	include .\LIB\SERIAL.ASM
 	include .\LIB\GAME.ASM
 end Start
-
