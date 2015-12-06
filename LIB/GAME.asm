@@ -37,7 +37,7 @@ Can_Make_Move proc
 	mov ax, cx
 	;твой цвет?
 	call Get_Board_Value_By_AX_to_AL
-	cmp al, Your_Colour
+	cmp al, 1
 	jne fail_make_move
 	; пустая клетка
 	mov ax, dx
@@ -142,7 +142,7 @@ Draw_New_Pawn_On_Screen endp
 Try_Make_Move proc
 	call Repaint_Cell	
 	call Remove_Pawn_From_Board
-	mov bl, Your_Colour
+	mov bl, 1
 	call Set_New_Pawn_On_Board
 	mov bl, PAWN_WHITE
 	call Draw_New_Pawn_On_Screen
@@ -215,7 +215,7 @@ Try_Cut_Pawn proc
 	call Repaint_Pawned_Cell
 	call Remove_Pawn_From_Board
 	call Remove_Pawned_Pawn_From_Board
-	mov bl, Your_Colour
+	mov bl, 1
 	call Set_New_Pawn_On_Board
 	mov bl, PAWN_WHITE
 	call Draw_New_Pawn_On_Screen

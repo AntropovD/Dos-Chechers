@@ -180,9 +180,10 @@ Exit_Procedure endp
 	vector_08h dd ?
 	SendSync_flag db 0	
 	ConnectionLost_flag db 0
-	Connection_flag db 0
+	Connection_flag db 0	
 
-	Your_Colour db 1
+
+	YOUR_COLOUR db 2 ;; White -1 Black - 2
 
 	connectionLost_msg db 'Connection Lost!',0
 	; 1 - белая пешка 

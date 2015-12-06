@@ -72,7 +72,7 @@ Check_Mouse proc
 	first_pawn_in_move:
 		call Get_Box_From_Coords		
 		call Get_Board_Value_By_AX_to_AL
-		cmp al, Your_Colour
+		cmp al, 1
 		jne check_mouse_exit
 		call Highlight_Box
 		call Get_Box_From_Coords

@@ -3,6 +3,14 @@ Init_Graphic proc
 	mov ax, 12h
 	int 10h
 
+	cmp Your_Colour, 2
+	jne do_not_change_colors
+	mov bl, PAWN_WHITE
+	mov bh, PAWN_BLACK
+	mov PAWN_BLACK, bl
+	mov PAWN_WHITE, bh
+	do_not_change_colors:
+
 	mov ah, 0Fh
 	int 10h
 	mov Old_Videomode, al
@@ -459,5 +467,5 @@ Repaint_Cell endp
 
 	CHESSBOARD_BLACK equ 6
 	CHESSBOARD_WHITE equ 14
-	PAWN_WHITE equ 7
-	PAWN_BLACK equ 0	
+	PAWN_WHITE db 7
+	PAWN_BLACK db 0	
