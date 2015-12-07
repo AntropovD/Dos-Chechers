@@ -310,11 +310,12 @@ Find_Middle_Cell proc
 	pop dx cx
 	ret
 
+
 	find_1:
-		add al, 01
+		inc al
 		jmp find_mid_cell_ret
 	find_4:
-		sub al, 01
+		dec al
 		jmp find_mid_cell_ret
 	find_2:
 		dec ah

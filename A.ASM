@@ -14,75 +14,66 @@ Start:
 		call Keyboard_CheckBuffer
 	sti
 	jmp Main_Loop
+Check_Mouse proc
+	push cs
+	pop es
+	cmp MouseClick_flag, 1
+	jne check_mouse_exit
+	mov MouseClick_flag, 0	
 
-Enter_Pressed proc
-	call Check_If_Command_Move
-	cmp ax, 1
-	je entered_move_command
-	entered_move_back:
+	cmp CURSOR_X, 384
+	jge check_mouse_exit
+	cmp CURSOR_Y, 384
+	jge check_mouse_exit
 
-	call Copy_Msg_To_Hist	
-	mov di, offset Message_Buffer
-	mov cx, 54	
-	clear_loop:
-		mov byte ptr [di], ' '
-		inc di
-		dec cx
-		cmp cx, 0
-		jne clear_loop
-	call Update_Msg_Buf
-	mov MsgBuf_Pointer, offset Message_Buffer	
+	call Print_Mouse_Coords
+	cmp LAST_CHOSEN_BOX, 0ffffh
+	je first_pawn_in_move
+
+	Continue_Moving:
+		call Get_Box_From_Coords
+		mov cx, LAST_CHOSEN_BOX
+		mov dx, ax
+		cmp ax, cx
+		je Same_Pawn_CLick
+		
+		call Can_Cut_Pawn
+		cmp ax, 1
+		je Possible_Cut_Pawn
+
+		call Can_Make_Move
+		cmp ax, 1
+		je Possible_Make_Move		
+
+		Cannot_Make_Move:
+		Same_Pawn_CLick:
+			call Unhighlight_Box
+			mov LAST_CHOSEN_BOX, 0ffffh
+			ret
+			
+		Possible_Make_Move:	
+			call Try_Make_Move			
+			mov LAST_CHOSEN_BOX, 0ffffh
+			ret
+
+		Possible_Cut_Pawn:
+			call Try_Cut_Pawn			
+			mov LAST_CHOSEN_BOX, 0ffffh
+			ret
+		
+
+	first_pawn_in_move:
+		call Get_Box_From_Coords		
+		call Get_Board_Value_By_AX_to_AL
+		cmp al, 1
+		jne check_mouse_exit
+		call Highlight_Box
+		call Get_Box_From_Coords
+		mov LAST_CHOSEN_BOX, ax			
+	check_mouse_exit:
 	ret
+Check_Mouse endp
 
-	entered_move_command:
-		mov di, MsgBuf_Pointer
-		mov byte ptr [di], 'C'
-		inc di
-		mov byte ptr [di], 'm'
-		inc di
-		mov byte ptr [di], 'd'
-		add MsgBuf_Pointer, 3
-
-		mov di, offset Message_Buffer
-		mov ch, byte ptr[di]
-		mov cl, byte ptr[di+1]
-		mov dh, byte ptr[di+2]
-		mov dl, byte ptr[di+3]
-		sub ch, '0'
-		sub cl, '0'
-		sub dh, '0'
-		sub dl, '0'
-
-		call Can_Enemy_Do_Move_Command_Cx_Dx
-		cmp ax, 1
-		je can_move_command
-
-		call Can_Enemy_Do_Pawn_Command_Cx_dx
-		cmp ax, 1
-		je can_pawn_command
-
-		not_can_command:
-			mov di, MsgBuf_Pointer
-			mov byte ptr [di], '-'
-			inc MsgBuf_Pointer
-			jmp entered_move_back
-
-		can_move_command:
-			mov di, MsgBuf_Pointer
-			mov byte ptr [di], '+'
-			inc MsgBuf_Pointer
-			call Execute_Enemy_Command_Cx_Dx
-			jmp entered_move_back
-
-		can_pawn_command:
-			mov di, MsgBuf_Pointer
-			mov byte ptr [di], '!'
-			inc MsgBuf_Pointer
-			call Execute_Enemy_Pawn_Command
-			jmp entered_move_back
-
-	Command_msg db 'Cmd'
-Enter_Pressed endp
 ;===============================================================
 Init proc 
 	call Init_Graphic	

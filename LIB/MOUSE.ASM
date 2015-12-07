@@ -21,65 +21,7 @@ Mouse_Handler:
 	mov MouseClick_flag, 1	
 	retf
 ;===============================================================
-Check_Mouse proc
-	push cs
-	pop es
-	cmp MouseClick_flag, 1
-	jne check_mouse_exit
-	mov MouseClick_flag, 0	
 
-	cmp CURSOR_X, 384
-	jge check_mouse_exit
-	cmp CURSOR_Y, 384
-	jge check_mouse_exit
-
-	call Print_Mouse_Coords
-	cmp LAST_CHOSEN_BOX, 0ffffh
-	je first_pawn_in_move
-
-	Continue_Moving:
-		call Get_Box_From_Coords
-		mov cx, LAST_CHOSEN_BOX
-		mov dx, ax
-		cmp ax, cx
-		je Same_Pawn_CLick
-		
-		call Can_Cut_Pawn
-		cmp ax, 1
-		je Possible_Cut_Pawn
-
-		call Can_Make_Move
-		cmp ax, 1
-		je Possible_Make_Move		
-
-		Cannot_Make_Move:
-		Same_Pawn_CLick:
-			call Unhighlight_Box
-			mov LAST_CHOSEN_BOX, 0ffffh
-			ret
-			
-		Possible_Make_Move:	
-			call Try_Make_Move			
-			mov LAST_CHOSEN_BOX, 0ffffh
-			ret
-
-		Possible_Cut_Pawn:
-			call Try_Cut_Pawn			
-			mov LAST_CHOSEN_BOX, 0ffffh
-			ret
-		
-
-	first_pawn_in_move:
-		call Get_Box_From_Coords		
-		call Get_Board_Value_By_AX_to_AL
-		cmp al, 1
-		jne check_mouse_exit
-		call Highlight_Box
-		call Get_Box_From_Coords
-		mov LAST_CHOSEN_BOX, ax			
-	check_mouse_exit:
-	ret
-Check_Mouse endp
 ;===============================================================
 Print_Mouse_Coords proc
 	push cs
