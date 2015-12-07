@@ -135,6 +135,10 @@ Draw_Chessboard proc
 		je white_pawn_in_cell
 		cmp al, 2
 		je black_pawn_in_cell
+		cmp al, 3
+		je white_king_in_cell
+		cmp al, 4
+		je black_king_in_cell
 		
 		no_pawn_in_cell:
 			add cx,48
@@ -157,6 +161,16 @@ Draw_Chessboard proc
 	black_pawn_in_cell:
 		push si
 		call Draw_BlackPawn
+		pop si
+		jmp no_pawn_in_cell
+	white_king_in_cell:
+		push si
+		call Draw_WhiteKing
+		pop si
+		jmp no_pawn_in_cell
+	black_king_in_cell:
+		push si
+		call Draw_BlackKing
 		pop si
 		jmp no_pawn_in_cell
 Draw_Chessboard endp
