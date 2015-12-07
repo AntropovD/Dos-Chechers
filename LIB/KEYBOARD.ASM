@@ -46,6 +46,7 @@ Backspace_Pressed proc
 	ret
 Backspace_Pressed endp
 ;===============================================================	
+
 Enter_Pressed proc
 	call Check_If_Command_Move
 	cmp ax, 1
@@ -77,29 +78,40 @@ Enter_Pressed proc
 		mov di, offset Message_Buffer
 		mov ch, byte ptr[di]
 		mov cl, byte ptr[di+1]
-		mov dh, byte ptr[di+3]
-		mov dl, byte ptr[di+4]
+		mov dh, byte ptr[di+2]
+		mov dl, byte ptr[di+3]
 		sub ch, '0'
 		sub cl, '0'
 		sub dh, '0'
 		sub dl, '0'
 
-		call Can_Enemy_Do_Command_Cx_Dx
+		call Can_Enemy_Do_Move_Command_Cx_Dx
 		cmp ax, 1
-		jne not_can_execute_command
+		je can_move_command
 
-		can_execute_command:
-		mov di, MsgBuf_Pointer
-		mov byte ptr [di], '+'
-		inc MsgBuf_Pointer
-		call Execute_Enemy_Command_Cx_Dx
-		jmp entered_move_back
+		call Can_Enemy_Do_Pawn_Command_Cx_dx
+		cmp ax, 1
+		je can_pawn_command
 
-		not_can_execute_command:
-		mov di, MsgBuf_Pointer
-		mov byte ptr [di], '-'
-		inc MsgBuf_Pointer
-		jmp entered_move_back
+		not_can_command:
+			mov di, MsgBuf_Pointer
+			mov byte ptr [di], '-'
+			inc MsgBuf_Pointer
+			jmp entered_move_back
+
+		can_move_command:
+			mov di, MsgBuf_Pointer
+			mov byte ptr [di], '+'
+			inc MsgBuf_Pointer
+			call Execute_Enemy_Command_Cx_Dx
+			jmp entered_move_back
+
+		can_pawn_command:
+			mov di, MsgBuf_Pointer
+			mov byte ptr [di], '!'
+			inc MsgBuf_Pointer
+			call Execute_Enemy_Pawn_Command
+			jmp entered_move_back
 
 	Command_msg db 'Cmd'
 Enter_Pressed endp
@@ -157,32 +169,21 @@ Copy_Msg_To_Hist endp
 Check_If_Command_Move proc
 	mov bx, MsgBuf_Pointer
 	sub bx, offset Message_Buffer
-	cmp bx, 5
-	jne not_move_command
+	mov Enemy_Command_Length, bx
+	push bx
+	and bx, 01b
+	cmp bx, 1
+	pop cx
+	je not_move_command
 	mov di, offset Message_buffer
 
-	mov al, [di]
-	call Is_Digit_Al
-	cmp al, 0
-	je not_move_command
-
-	mov al, [di+1]
-	call Is_Digit_Al
-	cmp al, 0
-	je not_move_command
-
-	cmp byte ptr [di+2], '-'
-	jne not_move_command
-
-	mov al, [di+3]
-	call Is_Digit_Al
-	cmp al, 0
-	je not_move_command
-
-	mov al, [di+4]
-	call Is_Digit_Al
-	cmp al, 0
-	je not_move_command
+	check_command_move_loop:
+		mov al, [di]
+		call Is_Digit_Al
+		cmp al, 1
+		jne not_move_command
+		inc di
+		loop check_command_move_loop
 
 		mov ax, 1
 		ret	
@@ -204,7 +205,7 @@ Is_Digit_Al proc
 Is_Digit_Al endp
 ;===============================================================
 ; cx - from dx - to
-Can_Enemy_Do_Command_Cx_Dx proc
+Can_Enemy_Do_Move_Command_Cx_Dx proc
 	; Проверка board[cx] = цвет, board[dx] = пусто
 	mov ax, cx
 	call Get_Board_Value_By_AX_to_AL
@@ -216,7 +217,7 @@ Can_Enemy_Do_Command_Cx_Dx proc
 	cmp al, 0
 	jne not_can_enemy_do_command 
 	; Проверка расстояний
-	call Can_Enemy_Pawn_Move_Like_This_Cx_Dx
+	call Can_Enemy_Move_Like_This_Cx_Dx
 	cmp ax, 1
 	jne not_can_enemy_do_command
 	
@@ -226,9 +227,9 @@ Can_Enemy_Do_Command_Cx_Dx proc
 	not_can_enemy_do_command:
 		mov ax, 0
 		ret
-Can_Enemy_Do_Command_Cx_Dx endp
+Can_Enemy_Do_Move_Command_Cx_Dx endp
 ;===============================================================
-Can_Enemy_Pawn_Move_Like_This_Cx_Dx proc
+Can_Enemy_Move_Like_This_Cx_Dx proc
 	push cx dx
 	add dx, 3030h	
 	sub dh, ch
@@ -250,8 +251,45 @@ Can_Enemy_Pawn_Move_Like_This_Cx_Dx proc
 		mov ax,0
 		pop dx cx
 		ret	
+Can_Enemy_Move_Like_This_Cx_Dx endp
+;===============================================================
+Enemy_Command_Length dw 0
+;===============================================================
+Can_Enemy_Do_Pawn_Command_Cx_dx proc
+	push cx dx
+
+	mov ax, cx
+	;твой цвет?
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 2
+	jne enemy_cant_pawn
+	; пустая клетка
+	mov ax, dx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 0
+	jne enemy_cant_pawn
+
+	; цвет посередмне
+	call Find_Middle_Cell
+	cmp ax, 0ffffh
+	je enemy_cant_pawn
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 1
+	jne enemy_cant_pawn
+	
+	enemy_can_pawn:
+		mov ax, 1
+		pop dx cx
+		ret 
+	enemy_cant_pawn:
+		mov ax, 0
+		pop dx cx	
+		ret
+Can_Enemy_Do_Pawn_Command_Cx_dx endp
+;===============================================================
+Execute_Enemy_Pawn_Command proc
+	
+	mov ax, 0
 	ret
-Can_Enemy_Pawn_Move_Like_This_Cx_Dx endp
-;===============================================================
-;===============================================================
+Execute_Enemy_Pawn_Command endp
 ;===============================================================

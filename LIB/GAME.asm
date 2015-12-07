@@ -208,7 +208,41 @@ Can_Pawn_Сut_Like_This_Cx_Dx proc
 		ret
 Can_Pawn_Сut_Like_This_Cx_Dx endp
 ;===============================================================
+Can_Cut_Pawn proc
+	push cx dx
 
+	mov ax, cx
+	;твой цвет?
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 1
+	jne fail_cut
+	; пешка врага
+	mov ax, dx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 0
+	jne fail_cut
+
+	call Can_Pawn_Сut_like_This_Cx_Dx
+	cmp ax, 1
+	jne fail_cut
+
+	mov ax, bx
+	mov Last_Pawned_Cell, bx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 2
+	jne fail_cut
+
+	good_cut:
+		call AddMessage_Can_Cut
+		mov ax, 1
+		pop dx cx
+		ret
+	fail_cut:
+		call AddMessage_Cannot_Cut
+		mov ax, 0
+		pop dx cx
+		ret	
+Can_Cut_Pawn endp
 ;===============================================================
 Try_Cut_Pawn proc
 	call Repaint_Cell	
@@ -255,7 +289,44 @@ AddMessage_Can_Cut proc
 	ret
 	can_cut_msg db 'goood cut '	
 AddMessage_Can_Cut endp
+;===============================================================
+; cx, dx
+; return ax
+Find_Middle_Cell proc
+	push cx dx
+	add dx, 3030h
+	sub dx, cx
+	mov ax, cx
 
+	cmp dx, 3032h
+	je find_1
+	cmp dx, 2e30h
+	je find_2
+	cmp dx, 3230h
+	je find_3
+	cmp dx, 302eh
+	je find_4
+	mov ax, 0ffffh
+	pop dx cx
+	ret
+
+	find_1:
+		add al, 01
+		jmp find_mid_cell_ret
+	find_4:
+		sub al, 01
+		jmp find_mid_cell_ret
+	find_2:
+		add ah, 01
+		jmp find_mid_cell_ret
+	find_3:
+		sub ah, 01
+		jmp find_mid_cell_ret
+
+	find_mid_cell_ret:
+	pop dx cx
+	ret
+Find_Middle_Cell endp
 
 
 

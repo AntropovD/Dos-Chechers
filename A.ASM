@@ -10,46 +10,11 @@ Start:
 		call Check_History_Buffer
 		call Check_Mouse
 		call Check_Ticks_Counts
-		;call Check_Com_Port
-	not_second_tick:
+		call Check_Com_Port
 		call Keyboard_CheckBuffer
 	sti
 	jmp Main_Loop
-Can_Cut_Pawn proc
-	push cx dx
 
-	mov ax, cx
-	;твой цвет?
-	call Get_Board_Value_By_AX_to_AL
-	cmp al, 1
-	jne fail_cut
-	; пешка врага
-	mov ax, dx
-	call Get_Board_Value_By_AX_to_AL
-	cmp al, 0
-	jne fail_cut
-
-	call Can_Pawn_Сut_like_This_Cx_Dx
-	cmp ax, 1
-	jne fail_cut
-
-	mov ax, bx
-	mov Last_Pawned_Cell, bx
-	call Get_Board_Value_By_AX_to_AL
-	cmp al, 2
-	jne fail_cut
-
-	good_cut:
-		call AddMessage_Can_Cut
-		mov ax, 1
-		pop dx cx
-		ret
-	fail_cut:
-		call AddMessage_Cannot_Cut
-		mov ax, 0
-		pop dx cx
-		ret	
-Can_Cut_Pawn endp
 ;===============================================================
 Init proc 
 	call Init_Graphic	
@@ -87,28 +52,6 @@ Interrupts_Uninstall proc
 	ret
 Interrupts_Uninstall endp
 ;===============================================================
-Send_Sync_Impulse proc
-	push ax
-	mov al, 01h
-	call Serial_AL_To_Buf
-	call Serial_Send_All
-	pop ax
-	ret
-Send_Sync_Impulse endp
-;===============================================================
-Check_Com_Port proc
-	call Serial_Check_Sth_Come	
-	je nothing_comes
-
-	call Serial_Get_Symbol_To_AL
-	mov ah, 2
-	mov dl, al
-	int 21h
-
-	nothing_comes:
-	ret
-Check_Com_Port endp
-;===============================================================
 Check_Ticks_Counts proc	
 	cmp SendSync_flag, 1
 	jne not_sendSync
@@ -118,25 +61,12 @@ Check_Ticks_Counts proc
 	not_sendSync:
 	cmp ConnectionLost_flag, 1
 	jne not_connectionLost
-	;call ConnectionLost_Message
+	mov ConnectionLost_flag, 0
+	call ConnectionLost_Message
 
 	not_connectionLost:
 	ret
 Check_Ticks_Counts endp
-;===============================================================
-ConnectionLost_Message proc
-	push cs
-	pop es
-	mov ax, 1301h
-	mov bx, 0dh	
-	mov cx, 16
-	mov dx, 1b02h
-	mov bp, offset connectionLost_msg
-	int 10h
-	;call Set_Cursor_Position_To_Variable
- ;	call Exit_Procedure
-	ret
-ConnectionLost_Message endp
 ;===============================================================
 interrupt_08h proc
 	inc sync_send
@@ -173,7 +103,6 @@ Exit_Procedure endp
 ;===============================================================	
 	sync_wait_exit db 60
 	sync_wait_send db 20
-
 	sync_send db 0
 	sync_exit db 0
 
@@ -211,4 +140,5 @@ Exit_Procedure endp
 	include .\LIB\MOUSE.ASM	
 	include .\LIB\SERIAL.ASM
 	include .\LIB\GAME.ASM
+	include .\LIB\COM.ASM
 end Start
