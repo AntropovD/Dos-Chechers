@@ -47,88 +47,6 @@ Backspace_Pressed proc
 Backspace_Pressed endp
 ;===============================================================	
 
-Enter_Pressed proc
-	CLI
-	mov cx, 6
-	mov si, offset update_cmd
-	mov di, offset Message_Buffer
-	repe cmpsb
-	jne not_update_cmd
-	call Update_Everything
-	jmp clear_buf_and_exit
-
-	not_update_cmd:
-		call Check_If_Command_Move
-		cmp ax, 1
-		je entered_move_command
-		entered_move_back:
-
-		call Copy_Msg_To_Hist	
-	clear_buf_and_exit:		
-	mov di, offset Message_Buffer
-	mov cx, 54	
-	clear_loop:
-		mov byte ptr [di], ' '
-		inc di
-		dec cx
-		cmp cx, 0
-		jne clear_loop
-	call Update_Msg_Buf
-	mov MsgBuf_Pointer, offset Message_Buffer	
-	STI
-	ret
-
-	entered_move_command:
-		mov di, MsgBuf_Pointer
-		mov byte ptr [di], 'C'
-		inc di
-		mov byte ptr [di], 'm'
-		inc di
-		mov byte ptr [di], 'd'
-		add MsgBuf_Pointer, 3
-
-		mov di, offset Message_Buffer
-		mov ch, byte ptr[di]
-		mov cl, byte ptr[di+1]
-		mov dh, byte ptr[di+2]
-		mov dl, byte ptr[di+3]
-		sub ch, '0'
-		sub cl, '0'
-		sub dh, '0'
-		sub dl, '0'
-
-		call Can_Enemy_Do_Move_Command_Cx_Dx
-		cmp ax, 1
-		je can_move_command
-
-		call Can_Enemy_Do_Pawn_Command_Cx_dx
-		cmp ax, 1
-		jne not_can_command
-
-
-		can_pawn_command:
-			mov di, MsgBuf_Pointer
-			mov byte ptr [di], '!'
-			inc MsgBuf_Pointer
-			call Execute_Enemy_Pawn_Command
-			jmp entered_move_back
-
-		not_can_command:
-			mov di, MsgBuf_Pointer
-			mov byte ptr [di], '-'
-			inc MsgBuf_Pointer
-			jmp entered_move_back
-
-		can_move_command:
-			mov di, MsgBuf_Pointer
-			mov byte ptr [di], '+'
-			inc MsgBuf_Pointer
-			call Execute_Enemy_Command_Cx_Dx
-			jmp entered_move_back		
-
-	Command_msg db 'Cmd'
-	update_cmd db 'update'
-Enter_Pressed endp
 ;===============================================================
 Execute_Enemy_Command_Cx_Dx proc
 	call Repaint_Cell
@@ -274,11 +192,7 @@ Can_Enemy_Do_Pawn_Command_Cx_dx proc
 
 	cmp cl, dl
 	jl enemy_cant_pawn
-	mov ax, cx
-	;твой цвет?
-	call Get_Board_Value_By_AX_to_AL
-	cmp al, 2
-	jne enemy_cant_pawn
+	
 	; пустая клетка
 	mov ax, dx
 	call Get_Board_Value_By_AX_to_AL
