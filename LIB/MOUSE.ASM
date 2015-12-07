@@ -64,7 +64,8 @@ Check_Mouse proc
 			ret
 
 		Possible_Cut_Pawn:
-			call Try_Cut_Pawn			
+			call Try_Cut_Pawn	
+			call Find_Another_Possible_Cut		
 			mov LAST_CHOSEN_BOX, 0ffffh
 			ret
 		

@@ -29,22 +29,24 @@ Enter_Pressed proc
 		call Check_If_Command_Move
 		cmp ax, 1
 		je entered_move_command
-		entered_move_back:
 
-		call Copy_Msg_To_Hist	
+	entered_move_back_1:
+		pop dx cx
+	entered_move_back:
+		call Copy_Msg_To_Hist		
 	clear_buf_and_exit:		
-	mov di, offset Message_Buffer
-	mov cx, 54	
-	clear_loop:
-		mov byte ptr [di], ' '
-		inc di
-		dec cx
-		cmp cx, 0
-		jne clear_loop
-	call Update_Msg_Buf
-	mov MsgBuf_Pointer, offset Message_Buffer	
-	STI
-	ret
+		mov di, offset Message_Buffer
+		mov cx, 54	
+		clear_loop:
+			mov byte ptr [di], ' '
+			inc di
+			dec cx
+			cmp cx, 0
+			jne clear_loop
+		call Update_Msg_Buf
+		mov MsgBuf_Pointer, offset Message_Buffer	
+		STI
+		ret
 
 	entered_move_command:
 		mov di, MsgBuf_Pointer
@@ -79,6 +81,8 @@ Enter_Pressed proc
 		cmp ax, 1
 		jne not_can_command
 
+		push cx dx
+
 		mov di, offset Message_Buffer
 		mov si, MsgBuf_Pointer
 		sub si, 3
@@ -92,19 +96,40 @@ Enter_Pressed proc
 			sub dx, 3030h
 				call Can_Enemy_Do_Pawn_Command_Cx_dx
 				cmp ax, 1
-				jne not_can_command
+				jne not_can_command_1
 			add di, 2
 			cmp di, si
 			jne all_moves_loop
-
+		pop dx cx
 
 		can_pawn_command:
 			mov di, MsgBuf_Pointer
 			mov byte ptr [di], '!'
 			inc MsgBuf_Pointer
 			call Execute_Enemy_Pawn_Command
+
+			mov di, offset Message_Buffer
+			mov si, MsgBuf_Pointer
+			sub si, 4
+			add di, 4
+			cmp si, di
+			je entered_move_back_1
+			all_cuts_loop:				
+				mov cx, dx
+				mov dh, byte ptr[di]
+				mov dl, byte ptr[di+1]
+				sub dx, 3030h
+				push si
+				call Execute_Enemy_Pawn_Command
+				pop si
+				add di, 2
+				cmp di, si
+				jne all_cuts_loop
+			
 			jmp entered_move_back
 
+		not_can_command_1:
+			pop dx cx	
 		not_can_command:
 			mov di, MsgBuf_Pointer
 			mov byte ptr [di], '-'
@@ -121,8 +146,6 @@ Enter_Pressed proc
 	Command_msg db 'Cmd'
 	update_cmd db 'update'
 Enter_Pressed endp
-
-
 ;===============================================================
 Init proc 
 	call Init_Graphic	
