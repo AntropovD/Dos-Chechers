@@ -89,6 +89,22 @@ Init_Pawn_Buffer proc near
 	mov cx, 480h
 	mov dx, offset Pawn_Buffer
 	int 21h
+
+	mov ax, 3d00h
+	mov dx, offset King_Filename
+	int 21h	
+
+	mov bx, ax
+	mov ax, 4200h
+	xor cx, cx
+	mov dx, 076h
+	int 21h
+
+	mov ah, 3fh
+	mov cx, 480h
+	mov dx, offset King_Buffer
+	int 21h
+
 	ret
 Init_Pawn_Buffer endp
 ;===============================================================
@@ -224,6 +240,51 @@ Draw_Chessboard endp
 			sub dx, 48
 			ret
 	Draw_Pawn endp
+;===============================================================
+	Draw_WhiteKing proc 
+		mov al, PAWN_WHITE
+		call Change_Colour
+		call Draw_King
+		ret	
+	Draw_WhiteKing endp
+	Draw_BlackKing proc
+		mov al, PAWN_BLACK
+		call Change_Colour
+		call Draw_King
+		ret
+	Draw_BlackKing endp
+	Draw_King proc
+		mov X, 0
+		mov Y, 0
+		mov si, offset King_Buffer
+		draw_king_loop:
+			lodsb
+			mov Temp, al
+			shr al, 4
+			call Print_Pixel_If_Not_Zero
+			inc cx
+			mov al, Temp
+			and al, 01111b
+			call Print_Pixel_If_Not_Zero
+			inc cx
+			inc Y
+			cmp Y, 24
+			je draw_king_new_line
+			jmp draw_king_loop
+
+		draw_king_new_line:
+			sub cx, 48
+			inc dx
+			inc X
+			mov Y, 0
+			cmp X, 48
+			je draw_king_exit
+			jmp draw_king_loop
+
+		draw_king_exit:
+			sub dx, 48
+			ret
+	Draw_King endp
 ;===============================================================
 Print_Pixel_If_Not_Zero proc
 	cmp al, 0
@@ -446,6 +507,9 @@ Repaint_Cell endp
 	Temp db ?
 	Pawn_Filename db 'IMG\PAWN.BMP',0
 	Pawn_Buffer db 480h dup (0)
+
+	King_Filename db 'IMG\KING.BMP',0
+	King_Buffer db 480h dup (0)
 
 	Update_History_Buffer_Flag db 0	
 
