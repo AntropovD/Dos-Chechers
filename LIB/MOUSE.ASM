@@ -65,10 +65,19 @@ Check_Mouse proc
 
 		Possible_Cut_Pawn:
 			call Try_Cut_Pawn	
-			call Find_Another_Possible_Cut		
-			mov LAST_CHOSEN_BOX, 0ffffh
-			ret
-		
+			call Check_Another_Possible_Cut		
+			cmp ax, 1
+			je can_another_cut
+
+			cant_another_cut:
+				mov LAST_CHOSEN_BOX, 0ffffh
+				ret
+			can_another_cut:
+				call AddMessage_Another_Step
+				mov ax, dx				
+				mov LAST_CHOSEN_BOX, dx
+				call Highlight_Box
+				ret		
 
 	first_pawn_in_move:
 		call Get_Box_From_Coords		

@@ -245,6 +245,7 @@ Can_Cut_Pawn proc
 Can_Cut_Pawn endp
 ;===============================================================
 Try_Cut_Pawn proc
+	push dx
 	call Repaint_Cell	
 	call Repaint_Pawned_Cell
 	call Remove_Pawn_From_Board
@@ -253,6 +254,7 @@ Try_Cut_Pawn proc
 	call Set_New_Pawn_On_Board
 	mov bl, PAWN_WHITE
 	call Draw_New_Pawn_On_Screen
+	pop dx
 	ret
 Try_Cut_Pawn endp
 ;===============================================================
@@ -289,6 +291,17 @@ AddMessage_Can_Cut proc
 	ret
 	can_cut_msg db 'goood cut '	
 AddMessage_Can_Cut endp
+;===============================================================
+AddMessage_Another_Step proc
+		mov di, offset BufferString
+	mov si, offset an_step_msg
+	mov cx, 27
+	repne movsb
+
+	call Add_BufferString_To_History
+	ret
+	an_step_msg db 'You can make another step!!'	
+AddMessage_Another_Step endp
 ;===============================================================
 ; cx, dx
 ; return ax
@@ -328,7 +341,59 @@ Find_Middle_Cell proc
 	pop dx cx
 	ret
 Find_Middle_Cell endp
+;===============================================================
+Check_Another_Possible_Cut proc
+	push cx dx
+
+	mov cx, dx
+	add dl, 2
+	call Check_For_Cut
+	cmp ax, 1
+	je possible_cut
+	sub dl, 2
+
+	add dh, 2
+	call Check_For_Cut
+	cmp ax, 1
+	je possible_cut
+
+	sub dh, 4
+	call Check_For_Cut
+	cmp ax, 1
+	je possible_cut
 
 
+	not_possible_cut:
+		mov ax, 0
+		pop dx cx
+		ret
+		
+	possible_cut:
+		mov ax, 1
+		pop dx cx
+		ret
+Check_Another_Possible_Cut endp
+;===============================================================
+Check_For_Cut proc
+	push cx dx
+	
+	call Find_Middle_Cell
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 2
+	jne cant_cut
 
+	mov ax, dx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 0
+	jne cant_cut	
 
+	can_cut:
+		mov ax, 1
+		pop cx dx
+		ret
+	cant_cut:
+		mov ax, 0
+		pop cx dx
+		ret
+Check_For_Cut endp
+;===============================================================
