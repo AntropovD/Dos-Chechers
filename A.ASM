@@ -15,6 +15,74 @@ Start:
 	sti
 	jmp Main_Loop
 
+Enter_Pressed proc
+	call Check_If_Command_Move
+	cmp ax, 1
+	je entered_move_command
+	entered_move_back:
+
+	call Copy_Msg_To_Hist	
+	mov di, offset Message_Buffer
+	mov cx, 54	
+	clear_loop:
+		mov byte ptr [di], ' '
+		inc di
+		dec cx
+		cmp cx, 0
+		jne clear_loop
+	call Update_Msg_Buf
+	mov MsgBuf_Pointer, offset Message_Buffer	
+	ret
+
+	entered_move_command:
+		mov di, MsgBuf_Pointer
+		mov byte ptr [di], 'C'
+		inc di
+		mov byte ptr [di], 'm'
+		inc di
+		mov byte ptr [di], 'd'
+		add MsgBuf_Pointer, 3
+
+		mov di, offset Message_Buffer
+		mov ch, byte ptr[di]
+		mov cl, byte ptr[di+1]
+		mov dh, byte ptr[di+2]
+		mov dl, byte ptr[di+3]
+		sub ch, '0'
+		sub cl, '0'
+		sub dh, '0'
+		sub dl, '0'
+
+		call Can_Enemy_Do_Move_Command_Cx_Dx
+		cmp ax, 1
+		je can_move_command
+
+		call Can_Enemy_Do_Pawn_Command_Cx_dx
+		cmp ax, 1
+		je can_pawn_command
+
+		not_can_command:
+			mov di, MsgBuf_Pointer
+			mov byte ptr [di], '-'
+			inc MsgBuf_Pointer
+			jmp entered_move_back
+
+		can_move_command:
+			mov di, MsgBuf_Pointer
+			mov byte ptr [di], '+'
+			inc MsgBuf_Pointer
+			call Execute_Enemy_Command_Cx_Dx
+			jmp entered_move_back
+
+		can_pawn_command:
+			mov di, MsgBuf_Pointer
+			mov byte ptr [di], '!'
+			inc MsgBuf_Pointer
+			call Execute_Enemy_Pawn_Command
+			jmp entered_move_back
+
+	Command_msg db 'Cmd'
+Enter_Pressed endp
 ;===============================================================
 Init proc 
 	call Init_Graphic	

@@ -73,7 +73,7 @@ Remove_Pawn_From_Board endp
 ;===============================================================
 Remove_Pawned_Pawn_From_Board proc
 	push cx dx
-	mov ax, Last_Pawned_Cell
+	call Find_Middle_Cell	
 	mov dl, 0
 	call Set_Board_Value_To_AX_From_DL
 	pop dx cx
@@ -317,10 +317,10 @@ Find_Middle_Cell proc
 		sub al, 01
 		jmp find_mid_cell_ret
 	find_2:
-		add ah, 01
+		dec ah
 		jmp find_mid_cell_ret
 	find_3:
-		sub ah, 01
+		inc ah
 		jmp find_mid_cell_ret
 
 	find_mid_cell_ret:

@@ -387,7 +387,8 @@ Highlight_Box endp
 ;===============================================================
 Repaint_Pawned_Cell proc
 	push cx
-	mov cx, Last_Pawned_Cell
+	call Find_Middle_Cell
+	mov cx, ax
 	call Repaint_Cell
 	pop cx	
 	ret
