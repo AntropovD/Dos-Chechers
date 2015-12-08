@@ -17,10 +17,13 @@ Init_Graphic proc
 
 	mov HB_Pointer, offset History_Buffer
 
+
 	call Init_Pawn_Buffer
 	call Draw_Chessboard
 	call Draw_Frame
 	call Draw_Message_Box
+
+	call Execute_Help_Command
 	ret
 Init_Graphic endp
 ;===============================================================

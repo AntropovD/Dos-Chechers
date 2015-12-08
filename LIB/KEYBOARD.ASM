@@ -46,7 +46,134 @@ Backspace_Pressed proc
 	ret
 Backspace_Pressed endp
 ;===============================================================	
+Enter_Pressed proc
+	CLI
 
+	call Check_Entered_Commands
+	cmp ax, 1
+	je clear_buf_and_exit
+	
+	call Check_If_Command_Move
+	cmp ax, 1
+	je entered_move_command
+
+	jmp entered_move_back
+
+	entered_move_back_1:
+		pop dx cx
+	entered_move_back:
+		call Copy_Msg_To_Hist		
+	clear_buf_and_exit:		
+		mov di, offset Message_Buffer
+		mov cx, 54	
+		clear_loop:
+			mov byte ptr [di], ' '
+			inc di
+			dec cx
+			cmp cx, 0
+			jne clear_loop
+		call Update_Msg_Buf
+		mov MsgBuf_Pointer, offset Message_Buffer	
+		STI
+		ret
+
+	entered_move_command:
+		mov di, MsgBuf_Pointer
+		mov byte ptr [di], 'C'
+		inc di
+		mov byte ptr [di], 'm'
+		inc di
+		mov byte ptr [di], 'd'
+		add MsgBuf_Pointer, 3
+
+		mov di, offset Message_Buffer
+		mov ch, byte ptr[di]
+		mov cl, byte ptr[di+1]
+		mov dh, byte ptr[di+2]
+		mov dl, byte ptr[di+3]
+		sub ch, '0'
+		sub cl, '0'
+		sub dh, '0'
+		sub dl, '0'
+
+		call Can_Enemy_Do_Move_Command_Cx_Dx
+		cmp ax, 1
+		je can_move_command
+
+		mov ax, cx
+		;твой цвет?
+		call Get_Board_Value_By_AX_to_AL
+		cmp al, 2
+		jne not_can_command
+
+		call Can_Enemy_Do_Pawn_Command_Cx_dx
+		cmp ax, 1
+		jne not_can_command
+
+		push cx dx
+
+		mov di, offset Message_Buffer
+		mov si, MsgBuf_Pointer
+		sub si, 3
+		add di, 4
+		cmp si, di
+		je can_pawn_command
+		all_moves_loop:				
+			mov cx, dx
+			mov dh, byte ptr[di]
+			mov dl, byte ptr[di+1]
+			sub dx, 3030h
+				call Can_Enemy_Do_Pawn_Command_Cx_dx
+				cmp ax, 1
+				jne __not_can_command_tvou_mat
+			add di, 2
+			cmp di, si
+			jne all_moves_loop
+		pop dx cx
+
+		can_pawn_command:
+			mov di, MsgBuf_Pointer
+			mov byte ptr [di], '!'
+			inc MsgBuf_Pointer
+			call Execute_Enemy_Pawn_Command
+
+			mov di, offset Message_Buffer
+			mov si, MsgBuf_Pointer
+			sub si, 4
+			add di, 4
+			cmp si, di
+			je entered_move_back_1
+			all_cuts_loop:				
+				mov cx, dx
+				mov dh, byte ptr[di]
+				mov dl, byte ptr[di+1]
+				sub dx, 3030h
+				push si
+				call Execute_Enemy_Pawn_Command
+				pop si
+				add di, 2
+				cmp di, si
+				jne all_cuts_loop
+			
+			jmp entered_move_back
+
+		__not_can_command_tvou_mat:
+			pop dx cx	
+		not_can_command:
+			mov di, MsgBuf_Pointer
+			mov byte ptr [di], '-'
+			inc MsgBuf_Pointer
+			jmp entered_move_back
+
+		can_move_command:
+			mov di, MsgBuf_Pointer
+			mov byte ptr [di], '+'
+			inc MsgBuf_Pointer
+			call Execute_Enemy_Command_Cx_Dx
+			jmp entered_move_back		
+
+	Command_msg db 'Cmd'
+Enter_Pressed endp
 ;===============================================================
 Execute_Enemy_Command_Cx_Dx proc
 	call Repaint_Cell
@@ -76,7 +203,7 @@ Copy_Msg_To_Hist proc
 	mov si, offset Message_Buffer
 	mov di, HB_Pointer	
 	mov cx, 27
-	repne movsb
+	rep movsb
 
 	add HB_Pointer, 27
 	mov bx, HB_Pointer
@@ -86,7 +213,7 @@ Copy_Msg_To_Hist proc
 
 	not_null_hb_pointer_cmth1:
 	mov cx, 27
-	repne movsb
+	rep movsb
 
 	add HB_Pointer, 27
 	mov bx, HB_Pointer
@@ -245,6 +372,63 @@ Update_Everything proc
 	ret
 Update_Everything endp
 ;===============================================================
+Check_Entered_Commands proc
+	mov cx, 6
+	mov si, offset update_cmd
+	mov di, offset Message_Buffer
+	repe cmpsb
+	jne not_match_1
+	match_1:
+		call Update_Everything
+		mov ax, 1
+		ret
+
+	not_match_1:
+		mov cx, 4
+		mov si, offset help_cmd
+		mov di, offset Message_Buffer
+		repe cmpsb
+		jne not_match_2
+		call Execute_Help_Command
+		mov ax, 1
+		ret
+
+	not_match_2:
+		mov ax, 0
+		ret
+
+	update_cmd db 'update'
+	help_cmd db 'help'
+Check_Entered_Commands endp
 ;===============================================================
+Execute_Help_Command proc
+	mov dl, count_strings	
+	mov si, offset Help_Text
+	 
+	help_loop:
+		mov di, word ptr HB_Pointer
+		mov cx, 27
+		rep movsb
+		add HB_Pointer, 27
+		mov bx, HB_Pointer
+		cmp bx, offset HB_End
+		jne not_null_hb
+		mov HB_Pointer, offset History_Buffer
+		not_null_hb:
+		dec dl
+		cmp dl, 0
+		jne help_loop
+	
+	mov Update_History_Buffer_Flag, 1
+	ret
+
+	count_strings db 4
+
+	Help_Text db 'Armyan chechers            '
+		  db 'Enter commands in console  '
+		  db 'update - update window     '
+		  db 'help - show help message   '
+
+Execute_Help_Command endp
 ;===============================================================
 ;===============================================================

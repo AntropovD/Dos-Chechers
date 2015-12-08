@@ -106,7 +106,7 @@ Print_Mouse_Coords proc
 
 	mov si, offset LCH_MSG
 	mov cx, 11 
-	repne movsb
+	rep movsb
 	mov al, byte ptr LAST_CHOSEN_BOX+1
 	add al, '0'
 	stosb
@@ -116,7 +116,7 @@ Print_Mouse_Coords proc
 
 	mov cx, 12
 	mov al, ' '
-	repne stosb
+	rep stosb
 	call Add_BufferString_To_History
 	ret
 
