@@ -1,4 +1,5 @@
 ;===============================================================
+
 Init_Graphic proc 
 	mov ax, 12h
 	int 10h
@@ -26,6 +27,7 @@ Init_Graphic proc
 	call Execute_Help_Command
 	ret
 Init_Graphic endp
+
 ;===============================================================
 Change_Colour proc 
 	push es
@@ -358,15 +360,7 @@ Draw_Message_Box proc
 	int 10h
 	ret
 Draw_Message_Box endp
-;===============================================================
-Check_History_Buffer proc
-	cmp Update_History_Buffer_Flag, 1
-	jne not_update_Hist_Buf
-	call Update_Hist_Buf	
-	mov Update_History_Buffer_Flag, 0
-	not_update_Hist_Buf:		
-	ret
-Check_History_Buffer endp
+
 ;===============================================================
 Update_Msg_Buf proc
 	mov bx, offset Message_Buffer
@@ -522,13 +516,13 @@ Repaint_Cell endp
 	X dw ?
 	Y dw ?
 	Temp db ?
+
 	Pawn_Filename db 'IMG\PAWN.BMP',0
 	Pawn_Buffer db 480h dup (0)
 
 	King_Filename db 'IMG\KING.BMP',0
 	King_Buffer db 480h dup (0)
 
-	Update_History_Buffer_Flag db 0	
 
 	Empty_Frame_Part db 27 dup(32)
 	Frame_Part1 db 201, 27 dup (205), 187

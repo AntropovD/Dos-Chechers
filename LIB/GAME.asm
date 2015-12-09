@@ -212,11 +212,11 @@ Can_Cut_Pawn proc
 	push cx dx
 
 	mov ax, cx
-	;твой цвет?
+	;your color
 	call Get_Board_Value_By_AX_to_AL
 	cmp al, 1
 	jne fail_cut
-	; пешка врага
+	; enemy pawn
 	mov ax, dx
 	call Get_Board_Value_By_AX_to_AL
 	cmp al, 0

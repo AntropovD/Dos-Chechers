@@ -101,7 +101,7 @@ Enter_Pressed proc
 		je can_move_command
 
 		mov ax, cx
-		;╤В╨▓╨╛╨╣ ╤Ж╨▓╨╡╤В?
+		;your color?
 		call Get_Board_Value_By_AX_to_AL
 		cmp al, 2
 		jne not_can_command
@@ -221,7 +221,7 @@ Copy_Msg_To_Hist proc
 	jne not_null_hb_pointer_cmth2
 	mov HB_Pointer, offset History_Buffer
 	not_null_hb_pointer_cmth2:
-		mov Update_History_Buffer_Flag, 1
+		call Update_Hist_Buf
 		ret
 Copy_Msg_To_Hist endp
 ;===============================================================
@@ -265,7 +265,7 @@ Is_Digit_Al endp
 ;===============================================================
 ; cx - from dx - to
 Can_Enemy_Do_Move_Command_Cx_Dx proc
-	; ╨Я╤А╨╛╨▓╨╡╤А╨║╨░ board[cx] = ╤Ж╨▓╨╡╤В, board[dx] = ╨┐╤Г╤Б╤В╨╛
+	; check if board[cx] = color, board[dx] = empty
 	mov ax, cx
 	call Get_Board_Value_By_AX_to_AL
 	cmp al, 2
@@ -275,7 +275,7 @@ Can_Enemy_Do_Move_Command_Cx_Dx proc
 	call Get_Board_Value_By_AX_to_AL
 	cmp al, 0
 	jne not_can_enemy_do_command 
-	; ╨Я╤А╨╛╨▓╨╡╤А╨║╨░ ╤А╨░╤Б╤Б╤В╨╛╤П╨╜╨╕╨╣
+	; distance check
 	call Can_Enemy_Move_Like_This_Cx_Dx
 	cmp ax, 1
 	jne not_can_enemy_do_command
@@ -320,13 +320,13 @@ Can_Enemy_Do_Pawn_Command_Cx_dx proc
 	cmp cl, dl
 	jl enemy_cant_pawn
 	
-	; ╨┐╤Г╤Б╤В╨░╤П ╨║╨╗╨╡╤В╨║╨░
+	; empty cell
 	mov ax, dx
 	call Get_Board_Value_By_AX_to_AL
 	cmp al, 0
 	jne enemy_cant_pawn
 
-	; ╤Ж╨▓╨╡╤В ╨┐╨╛╤Б╨╡╤А╨╡╨┤╨╝╨╜╨╡
+	; middle color
 	call Find_Middle_Cell
 	cmp ax, 0ffffh
 	je enemy_cant_pawn
@@ -366,7 +366,7 @@ Update_Everything proc
 		call Draw_Chessboard
 		call Draw_Frame
 		call Draw_Message_Box
-		mov Update_History_Buffer_Flag, 1
+		call Update_Hist_Buf
 		mov LAST_CHOSEN_BOX, 0ffffh
 	sti
 	ret
@@ -419,16 +419,45 @@ Execute_Help_Command proc
 		cmp dl, 0
 		jne help_loop
 	
-	mov Update_History_Buffer_Flag, 1
+	call Update_Hist_Buf
 	ret
 
-	count_strings db 4
-
-	Help_Text db 'Armyan chechers            '
-		  db 'Enter commands in console  '
-		  db 'update - update window     '
-		  db 'help - show help message   '
-
+	count_strings db 28
+	
+	Help_Text db '                           '
+			  db '      Армянские шашки      '
+			  db '                           '			  
+			  db 'Для определения порядка    '
+			  db 'хода используется игра     '
+			  db 'камень ножницы бумага      '
+			  db '                           '
+			  db 'Вводите команды в консоль  '
+			  db '                           '
+			  db 'Список команд:             '
+			  db 'Update - обновить интерфейс'
+			  db 'Help - показать справку    '
+			  db 'Rock - выбрать камень      '
+			  db 'Paper - выбрать бумагу     '
+			  db 'Scissors - выбрать ножницы '
+			  db 'Send - послать сообщение   '
+			  db 'Surrender - сдаться        '
+			  db 'Drawn - предложить ничью   '
+			  db 'Yeah - принять ничью       '
+			  db 'Nope - отказать ничью      '			  
+			  db 'Username - послать своё имя'
+			  db '                           '
+			  db '                           '
+			  db '                           '
+			  db '                           '
+			  db '                           '
+			  db '                           '		  
+			  db '                           '		  
+			  db '                           '		  
+			  
 Execute_Help_Command endp
 ;===============================================================
+Connection_Estabilished proc
+
+	ret
+Connection_Estabilished endp
 ;===============================================================

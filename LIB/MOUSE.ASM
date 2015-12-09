@@ -22,6 +22,9 @@ Mouse_Handler:
 	retf
 ;===============================================================
 Check_Mouse proc
+	cmp STATE, 4
+	jl check_mouse_exit
+
 	push cs
 	pop es
 	cmp MouseClick_flag, 1
@@ -159,8 +162,8 @@ Add_BufferString_To_History proc
 	mov HB_Pointer, offset History_Buffer
 
 	not_null_hb_pointer:
-		mov Update_History_Buffer_Flag, 1
-		ret
+	call Update_Hist_Buf
+	ret
 Add_BufferString_To_History endp
 ;===============================================================
 ;return BOARD[ah*8+al]
@@ -183,6 +186,9 @@ Get_Board_Value_By_AX_to_AL proc
 Get_Board_Value_By_AX_to_AL endp
 ;===============================================================
 Update_Hist_Buf proc
+	push cs 
+	pop es
+	
 	mov ax, 1300h
 	mov bx, 0fh
 	mov cx, 27

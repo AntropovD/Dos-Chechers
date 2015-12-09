@@ -7,13 +7,26 @@ Start:
 
 	Main_Loop:
 	cli	
-		call Check_History_Buffer
 		call Check_Mouse
 		call Check_Ticks_Counts
 		call Check_Com_Port
 		call Keyboard_CheckBuffer
 	sti
 	jmp Main_Loop
+
+ConnectionLost_Message proc
+	mov di, offset BufferString
+	mov si, offset connection_lost_msg
+	mov cx, 27
+	repne movsb
+
+
+	call Add_BufferString_To_History
+	ret
+	
+ 	connection_lost_msg db 'Connection lost!           '	
+ConnectionLost_Message endp
+
 ;===============================================================
 Init proc 
 	call Init_Graphic	
@@ -111,6 +124,8 @@ Exit_Procedure endp
 	Connection_flag db 0	
 
 
+	STATE db 0
+	
 	YOUR_COLOUR db 2 ;; White -1 Black - 2
 
 	connectionLost_msg db 'Connection Lost!',0
