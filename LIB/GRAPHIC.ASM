@@ -1,5 +1,4 @@
 ;===============================================================
-
 Init_Graphic proc 
 	mov ax, 12h
 	int 10h
@@ -27,7 +26,6 @@ Init_Graphic proc
 	call Execute_Help_Command
 	ret
 Init_Graphic endp
-
 ;===============================================================
 Change_Colour proc 
 	push es
@@ -363,18 +361,20 @@ Draw_Message_Box endp
 
 ;===============================================================
 Update_Msg_Buf proc
-	mov bx, offset Message_Buffer
-	mov ax, MsgBuf_Pointer 
-	sub ax, bx
-	mov cx, ax
+	cli
+		mov bx, offset Message_Buffer
+		mov ax, MsgBuf_Pointer 
+		sub ax, bx
+		mov cx, ax
 
-	push cs
-	pop es
-	mov ax, 1300h
-	mov bx, 00fh	
-	mov dx, 01c02h
-	mov bp, offset Message_Buffer
-	int 10h
+		push cs
+		pop es
+		mov ax, 1300h
+		mov bx, 00fh	
+		mov dx, 01c02h
+		mov bp, offset Message_Buffer
+		int 10h
+	sti
 	ret
 Update_Msg_Buf endp
 ;===============================================================
@@ -401,6 +401,16 @@ Highlight_Chosen_Box  proc
 
 	ret
 Highlight_Chosen_Box endp
+;===============================================================
+Check_History_Buffer proc
+	cmp Update_History_Buffer_Flag, 1
+	jne not_update_Hist_Buf
+	call Update_Hist_Buf	
+	mov Update_History_Buffer_Flag, 0
+	not_update_Hist_Buf:		
+	ret
+Check_History_Buffer endp
+;===============================================================
 ;===============================================================
 ; cx - заданная клекта в формате ah,al -> 1,1
 ;===============================================================

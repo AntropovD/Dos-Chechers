@@ -162,7 +162,7 @@ Add_BufferString_To_History proc
 	mov HB_Pointer, offset History_Buffer
 
 	not_null_hb_pointer:
-	call Update_Hist_Buf
+	mov Update_History_Buffer_Flag, 1
 	ret
 Add_BufferString_To_History endp
 ;===============================================================
@@ -188,7 +188,7 @@ Get_Board_Value_By_AX_to_AL endp
 Update_Hist_Buf proc
 	push cs 
 	pop es
-	
+
 	mov ax, 1300h
 	mov bx, 0fh
 	mov cx, 27

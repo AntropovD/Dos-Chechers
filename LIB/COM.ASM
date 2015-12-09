@@ -18,15 +18,16 @@ Check_Com_Port proc
 	call Sync_Comes
 	not_01h:
 
+
 	nothing_comes:
 	ret
 Check_Com_Port endp
-
+;===============================================================
 Sync_Comes proc
 	mov sync_exit, 0
-	cmp State, 0
+	cmp STATE, 0
 	jne exit_of_here
-	mov State, 1
+	mov STATE, 1
 	call Connection_Estabilished
 	
 	exit_of_here:
@@ -52,5 +53,28 @@ Send_Rock_Scissors proc
 	call Serial_Send_All
 	pop ax
 	ret
-Send_Clear_Choose_Buffer endp
+Send_Rock_Scissors endp
 ;===============================================================
+ConnectionLost_Message proc
+	push cs
+	pop es
+	mov di, offset BufferString
+	mov si, offset connection_lost_msg
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History
+	ret	
+ 	connection_lost_msg db 'Connection lost!           '	
+ConnectionLost_Message endp
+;===============================================================
+Connection_Estabilished proc	
+	push cs
+	pop es
+	mov di, offset BufferString
+	mov si, offset connection_set_msg
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History
+	ret	
+ 	connection_set_msg db 'Player has connected!      '
+Connection_Estabilished endp

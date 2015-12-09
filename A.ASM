@@ -6,26 +6,15 @@ Start:
 	call Init
 
 	Main_Loop:
+	hlt
 	cli	
+		call Check_History_Buffer
 		call Check_Mouse
 		call Check_Ticks_Counts
 		call Check_Com_Port
 		call Keyboard_CheckBuffer
 	sti
 	jmp Main_Loop
-
-ConnectionLost_Message proc
-	mov di, offset BufferString
-	mov si, offset connection_lost_msg
-	mov cx, 27
-	repne movsb
-
-
-	call Add_BufferString_To_History
-	ret
-	
- 	connection_lost_msg db 'Connection lost!           '	
-ConnectionLost_Message endp
 
 ;===============================================================
 Init proc 
@@ -74,6 +63,9 @@ Check_Ticks_Counts proc
 	cmp ConnectionLost_flag, 1
 	jne not_connectionLost
 	mov ConnectionLost_flag, 0
+	cmp State, 0
+	je not_connectionLost
+	mov State, 0
 	call ConnectionLost_Message
 
 	not_connectionLost:
@@ -84,20 +76,18 @@ interrupt_08h proc
 	inc sync_send
 	inc sync_exit
 
-	mov al, sync_send
-	cmp al, sync_wait_send
+	cmp sync_send, 20
 	jl not_sync_send
 	mov SendSync_flag, 1
 	mov sync_send, 0
 
-	not_sync_send:
-	mov al, sync_exit
-	cmp al, sync_wait_exit
+	not_sync_send:	
+	cmp sync_exit, 60
 	jl not_sync_exit
-	mov ConnectionLost_flag, 1
 	mov sync_exit, 0
-	not_sync_exit:
+	mov ConnectionLost_flag, 1	
 
+	not_sync_exit:
 	mov al, 20h
 	out 20h, al
 	iret
@@ -112,27 +102,24 @@ Exit_Procedure proc
 	int 20h
 	ret
 Exit_Procedure endp	
-;===============================================================	
-	sync_wait_exit db 60
-	sync_wait_send db 20
+;===============================================================		
 	sync_send db 0
 	sync_exit db 0
 
-	vector_08h dd ?
+	vector_08h dd 0
+
 	SendSync_flag db 0	
 	ConnectionLost_flag db 0
-	Connection_flag db 0	
-
+	Update_History_Buffer_Flag db 0	
 
 	STATE db 0
 	
 	YOUR_COLOUR db 2 ;; White -1 Black - 2
 
-	connectionLost_msg db 'Connection Lost!',0
-	; 1 - –±–µ–ª–∞—è –ø–µ—à–∫–∞ 
-	; 2 - —á–µ—Ä–Ω–∞—è –ø–µ—à–∫–∞
-	; 3 - –±–µ–ª–∞—è –¥–∞–º–∫–∞
-	; 4 - —á–µ—Ä–Ω–∞—è –¥–∞–º–∫–∞	
+	; 1 - °•´†Ô Ø•Ë™† 
+	; 2 - Á•‡≠†Ô Ø•Ë™†
+	; 3 - °•´†Ô §†¨™†
+	; 4 - Á•‡≠†Ô §†¨™†	
 	BOARD 	db 0, 0, 0, 0, 0, 0, 0, 0
 		db 2, 2, 2, 2, 2, 2, 2, 2
 		db 2, 2, 2, 2, 2, 2, 2, 2

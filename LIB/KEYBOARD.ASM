@@ -10,10 +10,9 @@ Keyboard_CheckBuffer proc
 	cmp ah, 1ch
 	je _enter_pressed
 	cmp ah, 0eh
-	je _backspace_pressed
+	je _backspace_pressed		
 	cmp al, 20h
-	jge printable_char_pressed
-
+	jae printable_char_pressed
 	check_buffer_exit:
 		ret
 
@@ -45,9 +44,11 @@ Backspace_Pressed proc
 	backsp_ret:
 	ret
 Backspace_Pressed endp
-;===============================================================	
+;===============================================================
 Enter_Pressed proc
-	CLI
+	mov bx, MsgBuf_Pointer
+	cmp bx, offset Message_Buffer
+	je exit_ooooo
 
 	call Check_Entered_Commands
 	cmp ax, 1
@@ -74,7 +75,6 @@ Enter_Pressed proc
 			jne clear_loop
 		call Update_Msg_Buf
 		mov MsgBuf_Pointer, offset Message_Buffer	
-		STI
 		ret
 
 	entered_move_command:
@@ -170,7 +170,11 @@ Enter_Pressed proc
 			mov byte ptr [di], '+'
 			inc MsgBuf_Pointer
 			call Execute_Enemy_Command_Cx_Dx
-			jmp entered_move_back		
+			jmp entered_move_back	
+
+
+	exit_ooooo:
+		ret	
 
 	Command_msg db 'Cmd'
 Enter_Pressed endp
@@ -363,6 +367,8 @@ Execute_Enemy_Pawn_Command endp
 ;===============================================================
 Update_Everything proc
 	cli
+		mov ax, 12h
+		int 10h
 		call Draw_Chessboard
 		call Draw_Frame
 		call Draw_Message_Box
@@ -394,11 +400,110 @@ Check_Entered_Commands proc
 		ret
 
 	not_match_2:
-		mov ax, 0
+		mov cx, 4
+		lea si, rock_cmd
+		lea di, Message_Buffer
+		repe cmpsb
+		jne not_match_3
+		call Execute_Rock_Cmd
+		mov ax, 1
+		ret
+
+	not_match_3:
+		mov cx, 5
+		lea si, paper_cmd
+		lea di, Message_Buffer
+		repe cmpsb
+		jne not_match_4
+		call Execute_Paper_Cmd
+		mov ax, 1
+		ret
+
+	not_match_4:
+		mov cx, 8
+		lea si, scissors_cmd
+		lea di, Message_Buffer
+		repe cmpsb
+		jne not_match_5
+		call Execute_Scissors_Cmd
+		mov ax, 1
+		ret
+
+	not_match_5:
+		mov cx, 5
+		lea si, send_cmd
+		lea di, Message_Buffer
+		repe cmpsb
+		jne not_match_6
+		call Execute_Send_Cmd
+		mov ax, 1
+		ret
+
+	not_match_6:
+		mov cx, 7
+		lea si, surrent_cmd
+		lea di, Message_Buffer
+		repe cmpsb
+		jne not_match_7
+		call Execute_Surrend_Cmd
+		mov ax, 1
+		ret
+
+	not_match_7:
+		mov cx, 5
+		lea si, drawn_cmd
+		lea di, Message_Buffer
+		repe cmpsb
+		jne not_match_8
+		call Execute_Drawn_Cmd
+		mov ax, 1
+		ret
+
+	not_match_8:
+		mov cx, 4
+		lea si, yeah_cmd
+		lea di, Message_Buffer
+		repe cmpsb
+		jne not_match_9
+		call Execute_Yeah_Cmd
+		mov ax, 1
+		ret
+
+	not_match_9:
+		mov cx, 4
+		lea si,  nope_cmd
+		lea di, Message_Buffer
+		repe cmpsb
+		jne not_match_10
+		call Execute_Nope_Cmd
+		mov ax, 1
+		ret
+
+	not_match_10:
+		mov cx, 9
+		lea si, username_cmd
+		lea di, Message_Buffer
+		repe cmpsb
+		jne not_match_11
+		call Execute_Username_Cmd
+		mov ax, 1
+		ret
+
+	not_match_11:
+		mov ax, 0 
 		ret
 
 	update_cmd db 'update'
 	help_cmd db 'help'
+	rock_cmd db 'rock'
+	paper_cmd db 'paper'
+	scissors_cmd db 'scissors'
+	send_cmd db 'send '
+	surrent_cmd db 'surrend'
+	drawn_cmd db 'drawn'
+	yeah_cmd db 'yeah'
+	nope_cmd db 'nope'
+	username_cmd db 'username '
 Check_Entered_Commands endp
 ;===============================================================
 Execute_Help_Command proc
@@ -424,13 +529,12 @@ Execute_Help_Command proc
 
 	count_strings db 28
 	
-	Help_Text db '                           '
+	Help_Text 	  db '                           '
 			  db '      Армянские шашки      '
 			  db '                           '			  
 			  db 'Для определения порядка    '
 			  db 'хода используется игра     '
 			  db 'камень ножницы бумага      '
-			  db '                           '
 			  db 'Вводите команды в консоль  '
 			  db '                           '
 			  db 'Список команд:             '
@@ -449,15 +553,59 @@ Execute_Help_Command proc
 			  db '                           '
 			  db '                           '
 			  db '                           '
-			  db '                           '
-			  db '                           '		  
-			  db '                           '		  
-			  db '                           '		  
-			  
+			  db '                           '	  
+			  db '                           '	  
+			  db '                           '	  
+			  db '                           '	  
+
+	ret			  
 Execute_Help_Command endp
 ;===============================================================
-Connection_Estabilished proc
+Execute_Rock_Cmd proc
 
 	ret
-Connection_Estabilished endp
+Execute_Rock_Cmd endp
+;===============================================================
+Execute_Paper_Cmd proc
+
+	ret
+Execute_Paper_Cmd endp
+;===============================================================
+Execute_Scissors_Cmd proc
+
+	ret
+Execute_Scissors_Cmd endp
+;===============================================================
+Execute_Send_Cmd proc
+
+	ret
+Execute_Send_Cmd endp
+;===============================================================
+Execute_Surrend_Cmd proc
+
+	ret
+Execute_Surrend_Cmd endp
+;===============================================================
+Execute_Drawn_Cmd proc
+
+	ret
+Execute_Drawn_Cmd endp
+;===============================================================
+Execute_Yeah_Cmd proc
+
+	ret
+Execute_Yeah_Cmd endp
+;===============================================================
+Execute_Nope_Cmd proc
+
+	ret
+Execute_Nope_Cmd endp
+;===============================================================
+Execute_Username_Cmd proc
+
+	ret
+Execute_Username_Cmd endp
+;===============================================================
+;===============================================================
+;===============================================================
 ;===============================================================
