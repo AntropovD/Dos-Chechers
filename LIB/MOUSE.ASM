@@ -23,7 +23,10 @@ Mouse_Handler:
 Check_Mouse proc
 	cmp STATE, 4
 	jl check_mouse_exit
-
+	
+	cmp TURN, 1
+	jne check_mouse_exit
+	
 	cmp MouseClick_flag, 1
 	jne check_mouse_exit
 	mov MouseClick_flag, 0	
@@ -70,17 +73,40 @@ Check_Mouse proc
 			je can_another_cut
 
 			cant_another_cut:
+				mov al, 'S'
+				call Serial_AL_To_Buf
+				mov cx, cb_pointer
+				sub cx, offset cut_buffer
+				mov bp, offset cut_buffer				
+				send_loop:
+					mov al, [bp]
+					add al, '0'
+					call Serial_AL_To_Buf
+					inc bp					
+					loop send_loop
+				mov al, 'E'
+				call Serial_AL_To_Buf				
+				call Serial_Send_All	
 				mov LAST_CHOSEN_BOX, 0ffffh
 				ret
 			can_another_cut:
 				call AddMessage_Another_Step
 				mov ax, dx				
 				mov LAST_CHOSEN_BOX, dx
-				call Highlight_Box
+				mov bp, cb_pointer
+				mov byte ptr [bp], ah
+				mov byte ptr [bp+1], al		
+				add cb_pointer, 2
+				call Highlight_Box				
 				ret		
 
 	first_pawn_in_move:
+
 		call Get_Box_From_Coords		
+		mov bp, offset cut_buffer
+		mov byte ptr [bp], ah
+		mov byte ptr [bp+1], al		
+		add cb_pointer, 2
 		call Get_Board_Value_By_AX_to_AL
 		cmp al, 1
 		jne check_mouse_exit
@@ -89,6 +115,9 @@ Check_Mouse proc
 		mov LAST_CHOSEN_BOX, ax			
 	check_mouse_exit:
 	ret
+	cut_buffer db 40 dup (0)
+	cb_pointer dw 0
+	
 Check_Mouse endp
 ;===============================================================
 ; ah, al -> (1,1) - первая клетка

@@ -13,7 +13,127 @@ Start:
 		call Check_History_Buffer		
 	jmp Main_Loop
 
+Check_Com_Port proc
+	call Serial_Check_Sth_Come	
+	je nothing_comes
 
+
+	call Serial_Get_Symbol_To_AL
+
+	____01h:
+		cmp al, 01h
+		jne not_01h
+		call Sync_Comes
+		jmp nothing_comes
+
+	not_01h:
+		cmp al, 'B'
+		jne not_B
+		cmp STATE, 1
+		jne not_B
+		mov STATE, 2
+		mov Opponent_Choise, 0ffh
+		jmp nothing_comes
+
+	not_B:
+		cmp al, 'C'
+		jne not_C
+		cmp STATE, 2
+		jne not_C
+		mov STATE, 3		
+		jmp nothing_comes
+
+	not_C:
+		cmp al, 'D'
+		jne not_D
+		mov di, offset BufferString
+		mov si, offset ready_msg
+		mov cx, 27
+		rep movsb
+		call Add_BufferString_To_History
+		mov STATE, 4
+
+	not_D:
+		cmp al, 'S'
+		jne not_S		
+		lea di, command_buffer
+		mov bx, 40
+		s_loop:
+			call Serial_Get_Str_To_DI	
+			cmp cx, 0
+			je s_loop
+		
+	not_S:
+		cmp al, 'F'
+		jne not_F
+
+	not_F:
+		cmp al, 'G'
+		jne not_G
+
+	not_G:
+		cmp al, 'M'
+		jne not_M
+
+	not_M:
+		cmp al, 'U'
+		jne not_U
+
+	not_U:
+		cmp al, 'Y'
+		jne not_Y
+
+	not_Y:
+		cmp al, 'N'
+		jne not_N
+
+	not_N:
+		cmp al, 'R'
+		jne not_R
+
+	not_R:
+		cmp al, 'W'
+		jne not_W
+
+	not_W:
+		cmp al, 'H'
+		jne not_H
+	not_H:
+		cmp al, '1'
+		jne not_1
+		cmp State, 3		
+		jne not_1
+		mov Opponent_Choise, '1'
+		call Check_Opponent_Choise
+		ret
+
+	not_1:
+		cmp al, '2'
+		jne not_2
+		cmp State, 3 
+		jne not_2
+		mov Opponent_Choise, '2'
+		call Check_Opponent_Choise
+		ret
+		
+
+	not_2:
+		cmp al, '3'
+		jne not_3
+		cmp State, 3 
+		jne not_3
+		mov Opponent_Choise, '3'
+		call Check_Opponent_Choise
+		ret
+
+	not_3:
+
+	nothing_comes:
+	ret
+	command_buffer db 40 dup(0)
+	cmbuffer_point dw 0
+	ready_msg db 'Противник готов к игре     '	
+Check_Com_Port endp
 ;===============================================================
 Init proc 
 	call Serial_Install
@@ -98,9 +218,9 @@ Exit_Procedure endp
 	ConnectionLost_flag db 0
 	Update_History_Buffer_Flag db 0	
 
-	STATE db 0
-	YOUR_COLOR db 0; 1 - white 2 - black
-	TURN db 0 ; 1- да, 2 - нет
+	STATE db 4
+	YOUR_COLOR db 1; 1 - white 2 - black
+	TURN db 1 ; 1- да, 2 - нет
 
 	MY_CHOISE db 0ffh
 	OPPONENT_CHOISE db 0ffh
@@ -117,14 +237,14 @@ Exit_Procedure endp
 		db 1, 1, 1, 1, 1, 1, 1, 1
 		db 0, 0, 0, 0, 0, 0, 0, 0
 
-	INITIALIZE_BOARD db 0, 0, 0, 0, 0, 0, 0, 0
-		db 2, 2, 2, 2, 2, 2, 2, 2
-		db 2, 2, 2, 2, 2, 2, 2, 2
-		db 0, 0, 0, 0, 0, 0, 0, 0
-		db 0, 0, 0, 0, 0, 0, 0, 0
-		db 1, 1, 1, 1, 1, 1, 1, 1
-		db 1, 1, 1, 1, 1, 1, 1, 1
-		db 0, 0, 0, 0, 0, 0, 0, 0
+	; INITIALIZE_BOARD db 0, 0, 0, 0, 0, 0, 0, 0
+		; db 2, 2, 2, 2, 2, 2, 2, 2
+		; db 2, 2, 2, 2, 2, 2, 2, 2
+		; db 0, 0, 0, 0, 0, 0, 0, 0
+		; db 0, 0, 0, 0, 0, 0, 0, 0
+		; db 1, 1, 1, 1, 1, 1, 1, 1
+		; db 1, 1, 1, 1, 1, 1, 1, 1
+		; db 0, 0, 0, 0, 0, 0, 0, 0
 
 	include .\LIB\GRAPHIC.ASM	
 	include .\LIB\KEYBOARD.ASM

@@ -140,12 +140,31 @@ Draw_New_Pawn_On_Screen proc
 Draw_New_Pawn_On_Screen endp
 ;===============================================================
 Try_Make_Move proc
+	push cx dx
 	call Repaint_Cell	
 	call Remove_Pawn_From_Board
 	mov bl, 1
 	call Set_New_Pawn_On_Board
 	mov bl, PAWN_WHITE
 	call Draw_New_Pawn_On_Screen
+	pop dx cx
+	mov al, 'S'
+	call Serial_AL_To_Buf
+	mov al, ch
+	add al, '0'
+	call Serial_AL_To_Buf
+	mov al, cl
+	add al, '0'
+	call Serial_AL_To_Buf
+	mov al, dh
+	add al, '0'
+	call Serial_AL_To_Buf
+	mov al, dl
+	add al, '0'
+	call Serial_AL_To_Buf
+	mov al, 'E'
+	call Serial_AL_To_Buf				
+	call Serial_Send_All		
 	ret
 Try_Make_Move endp
 ;===============================================================
