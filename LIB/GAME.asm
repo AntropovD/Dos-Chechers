@@ -486,15 +486,18 @@ Win_Rock proc
 	rep movsb
 	call Add_BufferString_To_History
 
-
 	mov al, 'D'
 	call Serial_AL_To_Buf
 	call Serial_Send_All
-
-	mov ConnectionLost_flag, 0
-	mov sync_exit, 0
+	
+	mov ax, 2
+	int 33h
 	mov YOUR_COLOR, 1
 	mov TURN, 1
+	;call Draw_Chessboard
+	call Draw_Pawns
+	mov ax, 1
+	int 33h
 	ret
 
 	win_rock_msg db 'Розыгрыш хода выигран.     '
@@ -507,7 +510,6 @@ Lose_Rock proc
 	mov cx, 27
 	rep movsb
 	call Add_BufferString_To_History
-
 
 	mov di, offset BufferString
 	mov si, offset lost_rock_msg2
@@ -525,11 +527,14 @@ Lose_Rock proc
 	mov PAWN_BLACK, bl
 	mov PAWN_WHITE, bh	
 
-	mov sync_exit, 0
-	call Draw_Chessboard
-	mov ConnectionLost_flag, 0	
+	mov ax, 2
+	int 33h
+;	call Draw_Chessboard
+	call Draw_Pawns
 	mov TURN, 2
-
+	mov ax, 1
+	int 33h
+	
 	ret
 	lost_rock_msg db 'Розыгрыш хода проигран.    '
 	lost_rock_msg2 db 'Вы играете черными         '

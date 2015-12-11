@@ -205,8 +205,6 @@ Printable_Char proc
 Printable_Char endp
 ;===============================================================
 Copy_Msg_To_Hist proc
-	push cs 
-	pop es
 	mov si, offset Message_Buffer
 	mov di, HB_Pointer	
 	mov cx, 27
@@ -369,19 +367,18 @@ Execute_Enemy_Pawn_Command proc
 Execute_Enemy_Pawn_Command endp
 ;===============================================================
 Update_Everything proc
-	cli
 		mov ax, 12h
 		int 10h
-		call Send_Sync_Impulse
+		mov ax, 2
+		int 33h
 		call Draw_Chessboard
-		call Send_Sync_Impulse
-		call Draw_Frame
-		call Send_Sync_Impulse
+		call Draw_Pawns
+		call Draw_Frame		
 		call Draw_Message_Box
-		call Send_Sync_Impulse
 		call Update_Hist_Buf
+		mov ax, 1
+		int 33h
 		mov LAST_CHOSEN_BOX, 0ffffh
-	sti
 	ret
 Update_Everything endp
 ;===============================================================

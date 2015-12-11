@@ -9,9 +9,9 @@ Init_Graphic proc
 
 	mov HB_Pointer, offset History_Buffer
 
-
 	call Init_Pawn_Buffer
 	call Draw_Chessboard
+	call Draw_Pawns
 	call Draw_Frame
 	call Draw_Message_Box
 
@@ -20,20 +20,18 @@ Init_Graphic proc
 Init_Graphic endp
 ;===============================================================
 Change_Colour proc 
-	push cs
 	push ax dx
 	xor ax, 0fh
 	shl ax, 8
 	inc ax
 	mov dx, 3ceh ; регистр разрешени¤ установки сброса
 	out dx, ax
-	pop dx ax
-	pop es
+	pop dx ax	
 	ret
 Change_Colour endp
 ;===============================================================
 Print_Pixel proc
-	push cs
+	push es
 	push ax cx dx
 	mov ax, 0a000h
 	mov es, ax
@@ -107,26 +105,45 @@ Draw_Chessboard proc
 	mov cx, 0
 	mov dx, 0
 	mov Index, 0
+		draw_chessboard_loop:	
+			xor ax, ax
+			mov al, byte ptr Index
+			mov bl, 8
+			div bl
+			and ah, 0001b
+			and al, 0001b
+			cmp ah, al		
+			jne black_cell
+				call Draw_WhiteBox
+				jmp $+5
+			black_cell:
+				call Draw_BlackBox		
+			
+				add cx,48
+				cmp cx, 384
+				jne not_new_line
+				sub cx, 384
+				add dx, 48
+			
+			not_new_line:
+				inc Index 
+				cmp Index, 64	
+				jne draw_chessboard_loop	
+	ret
+Draw_Chessboard endp
+;===============================================================
+Draw_Pawns proc
+	cmp YOUR_COLOR, 0
+	jne can_draw_pawns
+	ret
+	can_draw_pawns:
+
+	mov cx, 0
+	mov dx, 0
+	mov Index, 0
 	mov si, offset BOARD
 
-	draw_chessboard_loop:
-		push cs
-		pop es
-		xor ax, ax
-		mov al, byte ptr Index
-		mov bl, 8
-		div bl
-		and ah, 0001b
-		and al, 0001b
-		cmp ah, al		
-		jne black_cell
-			call Draw_WhiteBox
-			jmp $+5
-		black_cell:
-			call Draw_BlackBox
-
-		push cs
-		pop es
+	draw_chessboard_loop_2:
 		lodsb
 		cmp al, 0
 		je no_pawn_in_cell
@@ -142,14 +159,14 @@ Draw_Chessboard proc
 		no_pawn_in_cell:
 			add cx,48
 			cmp cx, 384
-			jne not_new_line
+			jne not_new_line_2
 			sub cx, 384
 			add dx, 48
 		
-		not_new_line:
+		not_new_line_2:
 			inc Index 
 			cmp Index, 64
-			jne draw_chessboard_loop
+			jne draw_chessboard_loop_2
 	ret
 
 	white_pawn_in_cell:
@@ -172,7 +189,7 @@ Draw_Chessboard proc
 		call Draw_BlackKing
 		pop si
 		jmp no_pawn_in_cell
-Draw_Chessboard endp
+Draw_Pawns endp
 ;===============================================================
 	Draw_WhiteBox proc 
 		mov al, CHESSBOARD_WHITE
@@ -187,6 +204,7 @@ Draw_Chessboard endp
 		ret
 	Draw_BlackBox endp	
 	Draw_Box proc 
+		cli
 		mov X, 0
 		mov Y, 0
 		draw_box_loop:
@@ -206,6 +224,7 @@ Draw_Chessboard endp
 			jmp draw_box_loop
 		draw_box_exit:
 			sub dx, 48
+			sti
 			ret
 	Draw_Box endp
 ;===============================================================
@@ -222,6 +241,7 @@ Draw_Chessboard endp
 		ret
 	Draw_BlackPawn endp
 	Draw_Pawn proc
+		cli
 		mov X, 0
 		mov Y, 0
 		mov si, offset Pawn_Buffer
@@ -251,6 +271,7 @@ Draw_Chessboard endp
 
 		draw_pawn_exit:
 			sub dx, 48
+			sti
 			ret
 	Draw_Pawn endp
 ;===============================================================
@@ -308,8 +329,6 @@ Print_Pixel_If_Not_Zero proc
 Print_Pixel_If_Not_Zero endp
 ;===============================================================
 Draw_Frame proc
-	push cs
-	pop es
 	mov ax, 1300h
 	mov bx, 09h
 	mov cx, 29 
@@ -332,8 +351,6 @@ Draw_Frame proc
 Draw_Frame endp
 ;===============================================================
 Draw_Message_Box proc
-	push cs
-	pop es
 	mov ax, 1300h
 	mov bx, 09h
 	mov cx, 50
@@ -354,29 +371,22 @@ Draw_Message_Box proc
 	int 10h
 	ret
 Draw_Message_Box endp
-
 ;===============================================================
 Update_Msg_Buf proc
-	cli
-		mov bx, offset Message_Buffer
-		mov ax, MsgBuf_Pointer 
-		sub ax, bx
-		mov cx, ax
-
-		push cs
-		pop es
-		mov ax, 1300h
-		mov bx, 00fh	
-		mov dx, 01c02h
-		mov bp, offset Message_Buffer
-		int 10h
-	sti
+	mov bx, offset Message_Buffer
+	mov ax, MsgBuf_Pointer 
+	sub ax, bx
+	mov cx, ax
+	
+	mov ax, 1300h
+	mov bx, 00fh	
+	mov dx, 01c02h
+	mov bp, offset Message_Buffer
+	int 10h
 	ret
 Update_Msg_Buf endp
 ;===============================================================
 Msg_Buf_Clear proc
-	push cs
-	pop es
 	mov ax, 1300h
 	mov bx, 00fh
 	mov dx, 1c02h
@@ -518,7 +528,6 @@ Repaint_Cell proc
 	chosen_cell_colour db ?
 Repaint_Cell endp
 ;===============================================================
-
 	Index db ?
 	Old_Videomode db ?
 	X dw ?

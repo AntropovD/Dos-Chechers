@@ -5,14 +5,12 @@
 Start:	
 	call Init
 
-	Main_Loop:
-	
+	Main_Loop:		
+		hlt
 		call Check_Mouse
 		call Check_Com_Port
-		call Keyboard_CheckBuffer
-		call Check_Ticks_Counts		
-		call Check_History_Buffer
-		hlt
+		call Keyboard_CheckBuffer	
+		call Check_History_Buffer		
 	jmp Main_Loop
 
 
@@ -53,41 +51,29 @@ Interrupts_Uninstall proc
 	ret
 Interrupts_Uninstall endp
 ;===============================================================
-Check_Ticks_Counts proc	
-	cmp SendSync_flag, 1
-	jne not_sendSync
-	mov SendSync_flag, 0
-	call Send_Sync_Impulse
-
-	not_sendSync:
-	cmp ConnectionLost_flag, 1
-	jne not_connectionLost
-	mov ConnectionLost_flag, 0
-	cmp State, 0
-	je not_connectionLost
-	mov State, 0
-	call ConnectionLost_Message
-
-	not_connectionLost:
-	ret
-Check_Ticks_Counts endp
-;===============================================================
 interrupt_08h proc	
+	push cx dx
 	inc sync_send
 	inc sync_exit
-
+	
+	push cs
+	pop es
 	cmp sync_send, 20
 	jl not_sync_send
-	mov SendSync_flag, 1
+	call Send_Sync_Impulse	
 	mov sync_send, 0
-
+	
 	not_sync_send:	
 	cmp sync_exit, 60
 	jl not_sync_exit
-	mov sync_exit, 0
-	mov ConnectionLost_flag, 1	
+	cmp State, 0
+		je not_connectionLost
+		mov State, 0
+		call ConnectionLost_Message	
 
+	not_connectionLost:
 	not_sync_exit:
+	pop dx cx
 	mov al, 20h
 	out 20h, al
 	iret

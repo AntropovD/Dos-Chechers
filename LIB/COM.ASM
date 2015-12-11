@@ -1,10 +1,8 @@
 ;===============================================================
 Send_Sync_Impulse proc
-	push cs
 	mov al, 01h
 	call Serial_AL_To_Buf
-	call Serial_Send_All
-	pop es
+	call Serial_Send_All	
 	ret
 Send_Sync_Impulse endp
 ;===============================================================
@@ -153,8 +151,6 @@ ConnectionLost_Message proc
 ConnectionLost_Message endp
 ;===============================================================
 Connection_Estabilished proc	
-	push cs
-	pop es
 	mov di, offset BufferString
 	mov si, offset connection_set_msg
 	mov cx, 27

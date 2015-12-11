@@ -4,8 +4,7 @@ Mouse_Init proc
 	int 33h
 	mov ax, 1
 	int 33h
-	push cs
-	pop es
+	
 	mov ax, 0Ch
 	mov cx, 0100b
 	mov dx, offset Mouse_Handler
@@ -25,8 +24,6 @@ Check_Mouse proc
 	cmp STATE, 4
 	jl check_mouse_exit
 
-	push cs
-	pop es
 	cmp MouseClick_flag, 1
 	jne check_mouse_exit
 	mov MouseClick_flag, 0	
@@ -94,38 +91,6 @@ Check_Mouse proc
 	ret
 Check_Mouse endp
 ;===============================================================
-; Print_Mouse_Coords proc
-; 	push cs
-; 	pop es
-; 	call Get_Box_From_Coords	
-; 	add al, '0'
-; 	add ah, '0'
-; 	mov di, offset BufferString		
-; 	mov bx, ax
-; 	mov al, bh
-; 	stosb
-; 	mov al, bl
-; 	stosb	
-
-; 	mov si, offset LCH_MSG
-; 	mov cx, 11 
-; 	rep movsb
-; 	mov al, byte ptr LAST_CHOSEN_BOX+1
-; 	add al, '0'
-; 	stosb
-; 	mov al, byte ptr LAST_CHOSEN_BOX
-; 	add al, '0'
-; 	stosb
-
-; 	mov cx, 12
-; 	mov al, ' '
-; 	rep stosb
-; 	call Add_BufferString_To_History
-; 	ret
-
-; 	LCH_MSG DB ' Last cell '	
-; Print_Mouse_Coords endp
-;===============================================================
 ; ah, al -> (1,1) - первая клетка
 Get_Box_From_Coords proc	
 	mov cx, CURSOR_X
@@ -188,7 +153,8 @@ Get_Board_Value_By_AX_to_AL endp
 Update_Hist_Buf proc
 	push cs 
 	pop es
-
+	
+	cli
 	mov ax, 1300h
 	mov bx, 0fh
 	mov cx, 27
@@ -204,6 +170,7 @@ Update_Hist_Buf proc
 		bp_ret:
 		cmp bp, HB_Pointer		
 		jne up_hist_buf_loop
+		sti
 	ret
 
 	bp_overflow:
