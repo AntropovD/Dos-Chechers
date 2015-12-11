@@ -6,21 +6,21 @@ Start:
 	call Init
 
 	Main_Loop:
-	hlt
-	cli	
-		call Check_History_Buffer
+	
 		call Check_Mouse
-		call Check_Ticks_Counts
 		call Check_Com_Port
 		call Keyboard_CheckBuffer
-	sti
+		call Check_Ticks_Counts		
+		call Check_History_Buffer
+		hlt
 	jmp Main_Loop
+
 
 ;===============================================================
 Init proc 
+	call Serial_Install
 	call Init_Graphic	
-	call Mouse_Init
-	call Serial_Install	
+	call Mouse_Init		
 	call Interrupts_Install	
 	lea bx, Message_Buffer
 	mov MsgBuf_Pointer, bx
@@ -72,7 +72,7 @@ Check_Ticks_Counts proc
 	ret
 Check_Ticks_Counts endp
 ;===============================================================
-interrupt_08h proc
+interrupt_08h proc	
 	inc sync_send
 	inc sync_exit
 
@@ -113,18 +113,20 @@ Exit_Procedure endp
 	Update_History_Buffer_Flag db 0	
 
 	STATE db 0
-	
-	YOUR_COLOUR db 2 ;; White -1 Black - 2
+	YOUR_COLOR db 0; 1 - white 2 - black
+	TURN db 0 ; 1- да, 2 - нет
 
-	; 1 - белая пешка 
-	; 2 - черная пешка
-	; 3 - белая дамка
-	; 4 - черная дамка	
+	MY_CHOISE db 0ffh
+	OPPONENT_CHOISE db 0ffh
+	; 1 - твоя пешка
+	; 2 - пешка врага
+	; 3 - твоя дамка
+	; 4 - дамка врага
 	BOARD 	db 0, 0, 0, 0, 0, 0, 0, 0
 		db 2, 2, 2, 2, 2, 2, 2, 2
 		db 2, 2, 2, 2, 2, 2, 2, 2
-		db 0, 3, 3, 0, 4, 4, 0, 0
-		db 0, 3, 3, 0, 4, 4, 0, 0
+		db 0, 0, 0, 0, 0, 0, 0, 0
+		db 0, 0, 0, 0, 0, 0, 0, 0
 		db 1, 1, 1, 1, 1, 1, 1, 1
 		db 1, 1, 1, 1, 1, 1, 1, 1
 		db 0, 0, 0, 0, 0, 0, 0, 0

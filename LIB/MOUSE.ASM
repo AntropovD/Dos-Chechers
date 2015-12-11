@@ -36,7 +36,7 @@ Check_Mouse proc
 	cmp CURSOR_Y, 384
 	jge check_mouse_exit
 
-	call Print_Mouse_Coords
+	;call Print_Mouse_Coords
 	cmp LAST_CHOSEN_BOX, 0ffffh
 	je first_pawn_in_move
 
@@ -94,37 +94,37 @@ Check_Mouse proc
 	ret
 Check_Mouse endp
 ;===============================================================
-Print_Mouse_Coords proc
-	push cs
-	pop es
-	call Get_Box_From_Coords	
-	add al, '0'
-	add ah, '0'
-	mov di, offset BufferString		
-	mov bx, ax
-	mov al, bh
-	stosb
-	mov al, bl
-	stosb	
+; Print_Mouse_Coords proc
+; 	push cs
+; 	pop es
+; 	call Get_Box_From_Coords	
+; 	add al, '0'
+; 	add ah, '0'
+; 	mov di, offset BufferString		
+; 	mov bx, ax
+; 	mov al, bh
+; 	stosb
+; 	mov al, bl
+; 	stosb	
 
-	mov si, offset LCH_MSG
-	mov cx, 11 
-	rep movsb
-	mov al, byte ptr LAST_CHOSEN_BOX+1
-	add al, '0'
-	stosb
-	mov al, byte ptr LAST_CHOSEN_BOX
-	add al, '0'
-	stosb
+; 	mov si, offset LCH_MSG
+; 	mov cx, 11 
+; 	rep movsb
+; 	mov al, byte ptr LAST_CHOSEN_BOX+1
+; 	add al, '0'
+; 	stosb
+; 	mov al, byte ptr LAST_CHOSEN_BOX
+; 	add al, '0'
+; 	stosb
 
-	mov cx, 12
-	mov al, ' '
-	rep stosb
-	call Add_BufferString_To_History
-	ret
+; 	mov cx, 12
+; 	mov al, ' '
+; 	rep stosb
+; 	call Add_BufferString_To_History
+; 	ret
 
-	LCH_MSG DB ' Last cell '	
-Print_Mouse_Coords endp
+; 	LCH_MSG DB ' Last cell '	
+; Print_Mouse_Coords endp
 ;===============================================================
 ; ah, al -> (1,1) - первая клетка
 Get_Box_From_Coords proc	

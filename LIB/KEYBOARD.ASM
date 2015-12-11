@@ -63,7 +63,8 @@ Enter_Pressed proc
 	entered_move_back_1:
 		pop dx cx
 	entered_move_back:
-		call Copy_Msg_To_Hist		
+	call Copy_Msg_To_Hist	
+	mov Update_History_Buffer_Flag, 1	
 	clear_buf_and_exit:		
 		mov di, offset Message_Buffer
 		mov cx, 54	
@@ -204,6 +205,8 @@ Printable_Char proc
 Printable_Char endp
 ;===============================================================
 Copy_Msg_To_Hist proc
+	push cs 
+	pop es
 	mov si, offset Message_Buffer
 	mov di, HB_Pointer	
 	mov cx, 27
@@ -225,7 +228,7 @@ Copy_Msg_To_Hist proc
 	jne not_null_hb_pointer_cmth2
 	mov HB_Pointer, offset History_Buffer
 	not_null_hb_pointer_cmth2:
-		call Update_Hist_Buf
+		mov Update_History_Buffer_Flag, 1
 		ret
 Copy_Msg_To_Hist endp
 ;===============================================================
@@ -369,9 +372,13 @@ Update_Everything proc
 	cli
 		mov ax, 12h
 		int 10h
+		call Send_Sync_Impulse
 		call Draw_Chessboard
+		call Send_Sync_Impulse
 		call Draw_Frame
+		call Send_Sync_Impulse
 		call Draw_Message_Box
+		call Send_Sync_Impulse
 		call Update_Hist_Buf
 		mov LAST_CHOSEN_BOX, 0ffffh
 	sti
@@ -493,17 +500,17 @@ Check_Entered_Commands proc
 		mov ax, 0 
 		ret
 
-	update_cmd db 'update'
-	help_cmd db 'help'
-	rock_cmd db 'rock'
-	paper_cmd db 'paper'
-	scissors_cmd db 'scissors'
-	send_cmd db 'send '
-	surrent_cmd db 'surrend'
-	drawn_cmd db 'drawn'
-	yeah_cmd db 'yeah'
-	nope_cmd db 'nope'
-	username_cmd db 'username '
+	update_cmd db 'Update'
+	help_cmd db 'Help'
+	rock_cmd db 'Rock'
+	paper_cmd db 'Paper'
+	scissors_cmd db 'Scissors'
+	send_cmd db 'Send '
+	surrent_cmd db 'Surrend'
+	drawn_cmd db 'Drawn'
+	yeah_cmd db 'Yeah'
+	nope_cmd db 'Nope'
+	username_cmd db 'Username '
 Check_Entered_Commands endp
 ;===============================================================
 Execute_Help_Command proc
@@ -562,16 +569,50 @@ Execute_Help_Command proc
 Execute_Help_Command endp
 ;===============================================================
 Execute_Rock_Cmd proc
-
+	cmp STATE, 0
+	jne $+3
+	ret
+	mov al, 'B'
+	call Serial_AL_To_Buf	
+	mov MY_CHOISE, '1'
+	mov al, 'C'
+	call Serial_AL_To_Buf
+	mov al, '1'
+	call Serial_AL_To_Buf
+	call Serial_Send_All
+	call Check_Opponent_Choise	
 	ret
 Execute_Rock_Cmd endp
 ;===============================================================
 Execute_Paper_Cmd proc
-
+	cmp STATE, 0
+	jne $+3
+	ret
+	mov al, 'B'
+	call Serial_AL_To_Buf	
+	mov MY_CHOISE, '3'
+	mov al, 'C'
+	call Serial_AL_To_Buf
+	mov al, '3'
+	call Serial_AL_To_Buf
+	call Serial_Send_All
+	call Check_Opponent_Choise
 	ret
 Execute_Paper_Cmd endp
 ;===============================================================
 Execute_Scissors_Cmd proc
+	cmp STATE, 0
+	jne $+3
+	ret
+	mov al, 'B'
+	call Serial_AL_To_Buf
+	mov MY_CHOISE, '2'
+	mov al, 'C'
+	call Serial_AL_To_Buf
+	mov al, '2'
+	call Serial_AL_To_Buf
+	call Serial_Send_All
+	call Check_Opponent_Choise
 
 	ret
 Execute_Scissors_Cmd endp

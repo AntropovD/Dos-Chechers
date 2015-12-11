@@ -3,14 +3,6 @@ Init_Graphic proc
 	mov ax, 12h
 	int 10h
 
-	cmp Your_Colour, 2
-	jne do_not_change_colors
-	mov bl, PAWN_WHITE
-	mov bh, PAWN_BLACK
-	mov PAWN_BLACK, bl
-	mov PAWN_WHITE, bh
-	do_not_change_colors:
-
 	mov ah, 0Fh
 	int 10h
 	mov Old_Videomode, al
@@ -28,7 +20,7 @@ Init_Graphic proc
 Init_Graphic endp
 ;===============================================================
 Change_Colour proc 
-	push es
+	push cs
 	push ax dx
 	xor ax, 0fh
 	shl ax, 8
@@ -41,7 +33,7 @@ Change_Colour proc
 Change_Colour endp
 ;===============================================================
 Print_Pixel proc
-	push es
+	push cs
 	push ax cx dx
 	mov ax, 0a000h
 	mov es, ax
@@ -118,6 +110,8 @@ Draw_Chessboard proc
 	mov si, offset BOARD
 
 	draw_chessboard_loop:
+		push cs
+		pop es
 		xor ax, ax
 		mov al, byte ptr Index
 		mov bl, 8
@@ -131,6 +125,8 @@ Draw_Chessboard proc
 		black_cell:
 			call Draw_BlackBox
 
+		push cs
+		pop es
 		lodsb
 		cmp al, 0
 		je no_pawn_in_cell
@@ -478,13 +474,15 @@ Repaint_Pawned_Cell endp
 ;===============================================================
 ; cx
 Repaint_Cell proc 
-	mov chosen_cell_colour, CHESSBOARD_BLACK
+	mov bl, CHESSBOARD_BLACK
+	mov chosen_cell_colour, bl
 	push cx dx
 	and ch, 0001b
 	and cl, 0001b
 	cmp ch, cl
 	je change_cell_colour
-	mov chosen_cell_colour, CHESSBOARD_WHITE
+	mov bl, CHESSBOARD_WHITE
+	mov chosen_cell_colour, bl
 	change_cell_colour:
 	mov al, chosen_cell_colour
 	call Change_Colour
@@ -548,10 +546,10 @@ Repaint_Cell endp
 	HB_End db ?
 
 	MsgBuf_Pointer dw 0
-	Message_Buffer db 48 dup (32)
-	Clear_Buffer db 48 dup (32)
+	Message_Buffer db 54 dup (32)
+	Clear_Buffer db 54 dup (32)
 
-	CHESSBOARD_BLACK equ 6
-	CHESSBOARD_WHITE equ 14
+	CHESSBOARD_BLACK db 6
+	CHESSBOARD_WHITE db 14
 	PAWN_WHITE db 7
 	PAWN_BLACK db 0	

@@ -50,13 +50,13 @@ Can_Make_Move proc
 	je fail_make_move		
 	
 	success_make_move:
-		call AddMessage_Can_Make_Move
+		;call AddMessage_Can_Make_Move
 		mov ax, 1
 		pop dx cx
 		ret
 		
 	fail_make_move:
-		call AddMessage_Cannot_Make_Move		
+		;call AddMessage_Cannot_Make_Move		
 		mov ax, 0
 		pop dx cx
 		ret
@@ -233,12 +233,12 @@ Can_Cut_Pawn proc
 	jne fail_cut
 
 	good_cut:
-		call AddMessage_Can_Cut
+		;call AddMessage_Can_Cut
 		mov ax, 1
 		pop dx cx
 		ret
 	fail_cut:
-		call AddMessage_Cannot_Cut
+		;call AddMessage_Cannot_Cut
 		mov ax, 0
 		pop dx cx
 		ret	
@@ -293,7 +293,7 @@ AddMessage_Can_Cut proc
 AddMessage_Can_Cut endp
 ;===============================================================
 AddMessage_Another_Step proc
-		mov di, offset BufferString
+	mov di, offset BufferString
 	mov si, offset an_step_msg
 	mov cx, 27
 	repne movsb
@@ -397,3 +397,154 @@ Check_For_Cut proc
 		ret
 Check_For_Cut endp
 ;===============================================================
+AddMessage_Equal proc
+	mov di, offset BufferString
+	mov si, offset choose_msg2
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History
+	call AddMessage_Input_Paper_Rock_Scissors
+
+
+	ret	 	
+	choose_msg2	   db 'Результаты совпали.        '
+	
+AddMessage_Equal endp
+;===============================================================
+Check_Opponent_Choise  proc	
+	cmp MY_CHOISE, 0ffh
+	je not_input_choise
+
+	cmp Opponent_Choise, 0ffh
+	je not_input_choise_2
+
+	mov bl, Opponent_Choise
+	cmp bl, MY_CHOISE
+	je _equal
+
+
+		cmp MY_CHOISE, '1'
+		jne check_2_3
+		cmp Opponent_Choise, '2'
+		je you_win
+		jmp you_lose
+
+	check_2_3:
+
+		cmp MY_CHOISE, '2'
+		jne check_3
+		cmp Opponent_Choise, '3'
+		je you_win
+		jmp you_lose
+
+
+	check_3:
+		cmp MY_CHOISE, '3'
+		jne some_error
+		cmp Opponent_Choise, '1'
+		je you_win
+		jmp you_lose
+
+	some_error:
+		ret
+		_equal:
+			mov State, 1
+			mov MY_CHOISE, 0ffh
+			mov Opponent_Choise, 0ffh
+			call AddMessage_Equal
+			ret
+
+		you_win:
+			mov MY_CHOISE, 0ffh
+			mov Opponent_Choise, 0ffh
+			call Win_Rock
+			ret
+
+		you_lose:	
+			mov MY_CHOISE, 0ffh
+			mov Opponent_Choise, 0ffh
+			call Lose_Rock
+			ret
+
+		not_input_choise:
+			call AddMessage_Input_Paper_Rock_Scissors
+		not_input_choise_2:
+			ret
+Check_Opponent_Choise endp
+;===============================================================
+Win_Rock proc
+	mov di, offset BufferString
+	mov si, offset win_rock_msg
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History
+
+
+	mov di, offset BufferString
+	mov si, offset win_rock_msg2
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History
+
+
+	mov al, 'D'
+	call Serial_AL_To_Buf
+	call Serial_Send_All
+
+	mov ConnectionLost_flag, 0
+	mov sync_exit, 0
+	mov YOUR_COLOR, 1
+	mov TURN, 1
+	ret
+
+	win_rock_msg db 'Розыгрыш хода выигран.     '
+	win_rock_msg2 db 'Вы играете белыми          '
+Win_Rock endp
+;===============================================================
+Lose_Rock proc
+	mov di, offset BufferString
+	mov si, offset lost_rock_msg 
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History
+
+
+	mov di, offset BufferString
+	mov si, offset lost_rock_msg2
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History
+
+	mov al, 'D'
+	call Serial_AL_To_Buf
+	call Serial_Send_All
+
+	mov YOUR_COLOR, 2	
+	mov bl, PAWN_WHITE
+	mov bh, PAWN_BLACK
+	mov PAWN_BLACK, bl
+	mov PAWN_WHITE, bh	
+
+	mov sync_exit, 0
+	call Draw_Chessboard
+	mov ConnectionLost_flag, 0	
+	mov TURN, 2
+
+	ret
+	lost_rock_msg db 'Розыгрыш хода проигран.    '
+	lost_rock_msg2 db 'Вы играете черными         '
+Lose_Rock endp
+;===============================================================
+AddMessage_Input_Paper_Rock_Scissors proc
+	mov di, offset BufferString
+	mov si, offset choose_msg1
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History
+
+	ret	 	
+	choose_msg1	   db 'Камень, ножницы, бумага?   '
+	
+AddMessage_Input_Paper_Rock_Scissors endp
+
+
