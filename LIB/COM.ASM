@@ -67,10 +67,17 @@ Check_Com_Port proc
 	not_S:
 		cmp al, 'F'
 		jne not_F
+		call ENEMY_SURRENDER
 
 	not_F:
 		cmp al, 'G'
 		jne not_G
+		mov di, offset BufferString
+		mov si, offset drawn_msg
+		mov cx, 27
+		rep movsb
+		call Add_BufferString_To_History	
+		mov was_Drawn, 1		
 
 	not_G:
 		cmp al, 'M'
@@ -99,6 +106,11 @@ Check_Com_Port proc
 	not_W:
 		cmp al, 'H'
 		jne not_H
+		cmp STATE, 6
+		jne nothing_comes
+		mov Enemy_agree_new, 1
+		call Check_Agree_For_New	
+		
 	not_H:
 		cmp al, '1'
 		jne not_1
@@ -146,6 +158,7 @@ Check_Com_Port proc
 	command_buffer db 40 dup(0)
 	cmbuffer_pointer dw 0
 	ready_msg db 'Противник готов к игре     '	
+	drawn_msg db 'Соперник предложил ничью   ' 
 Check_Com_Port endp
 ;===============================================================
 Sync_Comes proc
@@ -253,4 +266,49 @@ AddMessage_Turn_Accept proc
  	accept_move_msg db 'Ход подтвержден            '
 AddMessage_Turn_Accept endp
 ;===============================================================
+ENEMY_SURRENDER proc
+	cmp STATE, 4
+	je $+3
+	ret
+	mov STATE, 6
+	mov di, offset BufferString
+	mov si, offset surr_msg
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History	
+	
+	mov di, offset BufferString
+	mov si, offset again_msg
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History	
+	
+	ret	
+ 	surr_msg db 'Противник сдался!          '	
+ENEMY_SURRENDER endp
+;===============================================================
+AddMessage_YOU_WIN proc
+	mov di, offset BufferString
+	mov si, offset win_msg
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History	
+	
+	mov di, offset BufferString
+	mov si, offset again_msg
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History	
+	ret
+	
+	win_msg 	db 'Вы победили!               '
+	again_msg   db 'Начать заново?             '
+AddMessage_YOU_WIN endp
+;===============================================================
+was_Drawn db 0
+;===============================================================
+;===============================================================
+
+
+
 ;===============================================================

@@ -284,8 +284,7 @@ Find_Middle_Cell proc
 	pop dx cx
 	ret
 Find_Middle_Cell endp
-;===============================================================
-	
+;===============================================================	
 Check_Another_Possible_Cut proc
 	push cx dx
 
@@ -668,6 +667,56 @@ Check_Possible_Cut_CX proc
 		ret
 
 Check_Possible_Cut_CX	endp
+;===============================================================
+RESET_BOARD proc
+	mov si, offset INITIALIZE_BOARD
+	mov di, offset BOARD
+	mov cx, 64
+	rep movsb	
+	ret
+RESET_BOARD endp
+;===============================================================
+CHANGE_PAWNS_COLOUR proc
+	push bx
+		mov bh, PAWN_BLACK
+		mov bl, PAWN_WHITE
+		mov PAWN_BLACK, bl
+		mov PAWN_WHITE, bh
+	pop bx
+	ret
+CHANGE_PAWNS_COLOUR endp
+;===============================================================
+Check_Agree_For_New proc
+	cmp Enemy_agree_new, 1
+	jne agree_exit
+	cmp you_agree_new, 1
+	jne agree_exit
+	
+		call RESET_BOARD
+		call CHANGE_PAWNS_COLOUR
+		cmp YOUR_COLOR, 1
+		je white_was
+		not_white_was:
+			mov YOUR_COLOR, 1
+			mov TURN, 1
+			jmp here
+		white_was:
+			mov YOUR_COLOR, 2
+			mov TURN, 2
+		here:
+			mov sync_exit, 0
+			call Draw_Chessboard
+			mov sync_exit, 0
+			call Draw_Pawns			
+			mov STATE, 4		
+		
+	agree_exit:
+		ret
+Check_Agree_For_New endp
+;===============================================================
+Execute_Accept_Draw proc
+	ret
+Execute_Accept_Draw endp
 ;===============================================================
 AddMessage_Input_Paper_Rock_Scissors proc
 	mov di, offset BufferString

@@ -548,7 +548,7 @@ Execute_Help_Command proc
 			  db 'Paper - выбрать бумагу     '
 			  db 'Scissors - выбрать ножницы '
 			  db 'Send - послать сообщение   '
-			  db 'Surrender - сдаться        '
+			  db 'Surrend - сдаться          '
 			  db 'Drawn - предложить ничью   '
 			  db 'Yeah - принять ничью       '
 			  db 'Nope - отказать ничью      '			  
@@ -620,23 +620,102 @@ Execute_Send_Cmd proc
 Execute_Send_Cmd endp
 ;===============================================================
 Execute_Surrend_Cmd proc
-
+	cmp STATE, 4
+	je $+3
 	ret
+	mov STATE, 6
+	mov di, offset BufferString
+	mov si, offset surrend_msg
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History	
+	
+	mov di, offset BufferString
+	mov si, offset again_msg
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History	
+	
+	mov al, 'F'
+	call Serial_AL_To_Buf
+	call Serial_Send_All
+	
+	ret
+	surrend_msg db 'Вы сдались.                '
 Execute_Surrend_Cmd endp
 ;===============================================================
 Execute_Drawn_Cmd proc
-
+	cmp STATE, 4
+	je $+3
 	ret
+	mov di, offset BufferString
+	mov si, offset drdr_msg
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History
+	mov al, 'G'
+	call Serial_AL_To_Buf
+	call Serial_Send_All	
+	ret	
+	drdr_msg db 'Вы предложили ничью        '
 Execute_Drawn_Cmd endp
 ;===============================================================
 Execute_Yeah_Cmd proc
-
-	ret
+	cmp STATE, 6
+	jne yeah_exit
+		mov al, 'H'
+		call Serial_AL_To_Buf
+		call Serial_Send_All
+		mov you_agree_new, 1
+		call Check_Agree_For_New			
+	yeah_exit:
+	
+		cmp STATE, 4
+		je $+3
+		ret
+		cmp was_Drawn, 0
+		je $+3
+		ret
+		
+		mov di, offset BufferString
+		mov si, offset accept_draw_msg
+		mov cx, 27
+		rep movsb
+		call Add_BufferString_To_History
+		mov al, 'Y'
+		call Serial_AL_To_Buf
+		call Serial_Send_All
+		call Execute_Accept_Draw
+		mov was_Drawn, 0
+		
+		ret
+		accept_draw_msg db 'Принимаете ничью           '
 Execute_Yeah_Cmd endp
 ;===============================================================
 Execute_Nope_Cmd proc
-
-	ret
+	cmp STATE, 6
+	jne nope_exit
+		call Exit_Procedure
+	nope_exit:
+		cmp STATE, 4
+		je $+3
+		ret
+		cmp was_Drawn, 0
+		je $+3
+		ret
+		
+		mov di, offset BufferString
+		mov si, offset not_accept_draw_msg
+		mov cx, 27
+		rep movsb
+		call Add_BufferString_To_History
+		mov al, 'N'
+		call Serial_AL_To_Buf
+		call Serial_Send_All				
+		mov was_Drawn, 0
+		
+		ret
+		not_accept_draw_msg db 'Вы не согласны на ничью    '
 Execute_Nope_Cmd endp
 ;===============================================================
 Execute_Username_Cmd proc
@@ -644,6 +723,8 @@ Execute_Username_Cmd proc
 	ret
 Execute_Username_Cmd endp
 ;===============================================================
+Your_Name db 30 dup(' ')
+Enemy_Name db 30 dup(' ')
 ;===============================================================
 ;===============================================================
 ;===============================================================
