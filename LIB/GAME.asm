@@ -1,36 +1,4 @@
 ;===============================================================
-; cx - from, dx - to
-;===============================================================
-AddMessage_Cannot_Make_Move proc
-	mov di, offset BufferString
-	mov si, offset cannot_make_move_msg
-	mov cx, 10
-	repne movsb
-
-	mov al, ' '
-	mov cx, 17
-	repne stosb
-
-	call Add_BufferString_To_History
-	ret
-	cannot_make_move_msg db 'wrong move'	
-AddMessage_Cannot_Make_Move endp
-;===============================================================
-AddMessage_Can_Make_Move proc
-	mov di, offset BufferString
-	mov si, offset can_make_move_msg
-	mov cx, 10
-	repne movsb
-
-	mov al, ' '
-	mov cx, 17
-	repne stosb
-
-	call Add_BufferString_To_History
-	ret
-	can_make_move_msg db 'goood move'	
-AddMessage_Can_Make_Move endp
-;===============================================================
 Can_Make_Move proc
 	push cx dx
 
@@ -50,13 +18,11 @@ Can_Make_Move proc
 	je fail_make_move		
 	
 	success_make_move:
-		;call AddMessage_Can_Make_Move
 		mov ax, 1
 		pop dx cx
 		ret
 		
 	fail_make_move:
-		;call AddMessage_Cannot_Make_Move		
 		mov ax, 0
 		pop dx cx
 		ret
@@ -148,23 +114,26 @@ Try_Make_Move proc
 	mov bl, PAWN_WHITE
 	call Draw_New_Pawn_On_Screen
 	pop dx cx
-	mov al, 'S'
-	call Serial_AL_To_Buf
-	mov al, ch
-	add al, '0'
-	call Serial_AL_To_Buf
-	mov al, cl
-	add al, '0'
-	call Serial_AL_To_Buf
-	mov al, dh
-	add al, '0'
-	call Serial_AL_To_Buf
-	mov al, dl
-	add al, '0'
-	call Serial_AL_To_Buf
-	mov al, 'E'
-	call Serial_AL_To_Buf				
-	call Serial_Send_All		
+	SEND_COMMAND:
+		call Reverse_Cx_Dx
+		mov al, 'S'
+		call Serial_AL_To_Buf
+		mov al, ch
+		add al, '0'
+		call Serial_AL_To_Buf
+		mov al, cl
+		add al, '0'
+		call Serial_AL_To_Buf
+		mov al, dh
+		add al, '0'
+		call Serial_AL_To_Buf
+		mov al, dl
+		add al, '0'
+		call Serial_AL_To_Buf
+		mov al, 'E'
+		call Serial_AL_To_Buf				
+		call Serial_Send_All	
+	
 	ret
 Try_Make_Move endp
 ;===============================================================
@@ -192,7 +161,7 @@ Can_Pawn_Move_like_This_Cx_Dx proc
 		ret	
 Can_Pawn_Move_like_This_Cx_Dx endp
 ;===============================================================
-Can_Pawn_╨бut_Like_This_Cx_Dx proc
+Can_Pawn_Cut_like_This_Cx_Dx proc
 	push cx dx
 	add dx, 3030h
 	sub dx, cx
@@ -225,7 +194,7 @@ Can_Pawn_╨бut_Like_This_Cx_Dx proc
 		add bh, 01
 		pop dx cx	
 		ret
-Can_Pawn_╨бut_Like_This_Cx_Dx endp
+Can_Pawn_Cut_like_This_Cx_Dx endp
 ;===============================================================
 Can_Cut_Pawn proc
 	push cx dx
@@ -241,7 +210,7 @@ Can_Cut_Pawn proc
 	cmp al, 0
 	jne fail_cut
 
-	call Can_Pawn_╨бut_like_This_Cx_Dx
+	call Can_Pawn_Cut_like_This_Cx_Dx
 	cmp ax, 1
 	jne fail_cut
 
@@ -251,13 +220,11 @@ Can_Cut_Pawn proc
 	cmp al, 2
 	jne fail_cut
 
-	good_cut:
-		;call AddMessage_Can_Cut
+	good_cut:		
 		mov ax, 1
 		pop dx cx
 		ret
-	fail_cut:
-		;call AddMessage_Cannot_Cut
+	fail_cut:		
 		mov ax, 0
 		pop dx cx
 		ret	
@@ -278,49 +245,6 @@ Try_Cut_Pawn proc
 Try_Cut_Pawn endp
 ;===============================================================
 Last_Pawned_Cell dw 0
-;===============================================================
-;===============================================================
-;===============================================================
-AddMessage_Cannot_Cut proc
-	mov di, offset BufferString
-	mov si, offset cannot_cut_msg
-	mov cx, 10
-	repne movsb
-
-	mov al, ' '
-	mov cx, 17
-	repne stosb
-
-	call Add_BufferString_To_History
-	ret
-	cannot_cut_msg db 'wrong cut '	
-AddMessage_Cannot_Cut endp
-;===============================================================
-AddMessage_Can_Cut proc
-	mov di, offset BufferString
-	mov si, offset can_cut_msg
-	mov cx, 10
-	repne movsb
-
-	mov al, ' '
-	mov cx, 17
-	repne stosb
-
-	call Add_BufferString_To_History
-	ret
-	can_cut_msg db 'goood cut '	
-AddMessage_Can_Cut endp
-;===============================================================
-AddMessage_Another_Step proc
-	mov di, offset BufferString
-	mov si, offset an_step_msg
-	mov cx, 27
-	repne movsb
-
-	call Add_BufferString_To_History
-	ret
-	an_step_msg db 'You can make another step!!'	
-AddMessage_Another_Step endp
 ;===============================================================
 ; cx, dx
 ; return ax
@@ -361,6 +285,7 @@ Find_Middle_Cell proc
 	ret
 Find_Middle_Cell endp
 ;===============================================================
+	
 Check_Another_Possible_Cut proc
 	push cx dx
 
@@ -408,11 +333,11 @@ Check_For_Cut proc
 
 	can_cut:
 		mov ax, 1
-		pop cx dx
+		pop dx cx
 		ret
 	cant_cut:
 		mov ax, 0
-		pop cx dx
+		pop dx cx
 		ret
 Check_For_Cut endp
 ;===============================================================
@@ -509,11 +434,10 @@ Win_Rock proc
 	call Serial_AL_To_Buf
 	call Serial_Send_All
 	
+	mov YOUR_COLOR, 1
+	mov TURN, 1	
 	mov ax, 2
 	int 33h
-	mov YOUR_COLOR, 1
-	mov TURN, 1
-	;call Draw_Chessboard
 	call Draw_Pawns
 	mov ax, 1
 	int 33h
@@ -548,16 +472,202 @@ Lose_Rock proc
 
 	mov ax, 2
 	int 33h
-;	call Draw_Chessboard
 	call Draw_Pawns
-	mov TURN, 2
 	mov ax, 1
 	int 33h
+	mov TURN, 2
 	
 	ret
 	lost_rock_msg db 'Розыгрыш хода проигран.    '
 	lost_rock_msg2 db 'Вы играете черными         '
 Lose_Rock endp
+;===============================================================
+Get_Enemy_Colour proc
+	cmp YOUR_COLOR, 1
+	je mov_white
+		mov bl, PAWN_WHITE
+		ret
+	mov_white:
+		mov bl, PAWN_BLACK
+	ret
+Get_Enemy_Colour endp
+;===============================================================
+Make_Step_Cx_Dx proc
+	
+	push cx dx
+	call Repaint_Cell	
+	mov ax, cx
+	call Get_Board_Value_By_AX_to_AL
+	push ax
+	call Remove_Pawn_From_Board
+	pop bx
+	call Set_New_Pawn_On_Board
+	mov bl, PAWN_BLACK
+	call Draw_New_Pawn_On_Screen
+	pop dx cx
+	
+	ret
+Make_Step_Cx_Dx endp
+;===============================================================
+Reverse_Cx_Dx proc
+	cmp YOUR_COLOR, 1
+	jne $+1
+	ret
+	mov bx, 0909h
+	sub bh, ch
+	sub bl, cl
+	mov cx, bx
+	mov bx, 0909h
+	sub bh, dh
+	sub bl, dl
+	mov dx, bx
+	ret
+Reverse_Cx_Dx endp
+;===============================================================
+Reverse_DX proc
+	cmp YOUR_COLOR, 1
+	jne $+1
+	ret
+	mov bx, 0909h
+	sub bh, dh
+	sub bl, dl
+	mov dx, bx
+	ret
+Reverse_DX endp
+;===============================================================
+
+ExecuteCommand_In_Di_Size_CX proc
+	mov cmd_size, cx
+	push di
+	sub30_loop:
+		mov bl, [di]
+		sub bl, 30h
+		mov [di], bl
+		inc di
+		loop sub30_loop
+	pop di
+
+	; mov ch, [di]
+	; mov cl, [di+1]
+	; mov dh, [di+2]
+	; mov dl, [di+3]
+	; call Reverse_Cx_Dx
+	; push cx dx
+	; mov ax, cx
+	; call Get_Board_Value_By_AX_to_AL
+	; cmp al, 2
+	; jne fail_execute
+	; mov ax, dx
+	; call Get_Board_Value_By_AX_to_AL
+	; cmp al,0
+	; jne fail_execute
+	
+	; call Make_Step_Cx_Dx
+	; mov TURN, 1
+	
+	; fail_execute:
+		; pop dx cx
+		; ret
+	mov ch, [di]
+	mov cl, [di+1]
+	mov dh, [di+2]
+	mov dl, [di+3]
+	call Reverse_Cx_Dx
+	
+	mov ax, cx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 2
+	jne not_can_command
+	
+	call Can_Enemy_Do_Move_Command_Cx_Dx
+	cmp ax, 1
+	je can_move_command	
+
+	call Can_Enemy_Do_Pawn_Command_Cx_dx
+	cmp ax, 1
+	jne not_can_command
+	
+		; cmp cmd_size, 2
+		; je can_pawn_command
+		; all_moves_loop:				
+			; mov cx, dx
+			; mov dh, byte ptr[di]
+			; mov dl, byte ptr[di+1]
+				; call Can_Enemy_Do_Pawn_Command_Cx_dx
+				; cmp ax, 1
+				; jne not_can_command
+			; sub cmd_size, 2
+			; cmp cmd_size, 2
+			; jne all_moves_loop	
+
+		can_pawn_command:
+			call Execute_Enemy_Pawn_Command			
+			mov si, di
+			add si, cmd_size			
+			cmp cmd_size, 4
+			je can_pawn_finish
+			add di, 4
+			all_cuts_loop:				
+				mov cx, dx
+				mov dh, byte ptr[di]
+				mov dl, byte ptr[di+1]
+				call Reverse_DX
+				push si
+				call Execute_Enemy_Pawn_Command
+				pop si
+				add di, 2
+				cmp di, si
+				jne all_cuts_loop
+				
+			can_pawn_finish:
+				mov TURN, 1
+				ret
+
+		__not_can_command_tvou_mat:
+		not_can_command:
+			; Send Serial can not _ do command
+			mov TURN, 2
+			ret
+
+		can_move_command:
+			call Make_Step_Cx_Dx
+			mov TURN, 1
+			ret	
+	
+	cmd_size dw 0
+ExecuteCommand_In_Di_Size_CX endp
+;===============================================================
+Check_Possible_Cut_CX proc
+	push cx dx
+
+	mov dx, cx
+	add dl, 2
+	call Check_For_Cut
+	cmp ax, 1
+	je possible_cut_1
+	sub dl, 2
+
+	add dh, 2
+	call Check_For_Cut
+	cmp ax, 1
+	je possible_cut_1
+
+	sub dh, 4
+	call Check_For_Cut
+	cmp ax, 1
+	je possible_cut_1
+
+	not_possible_cut_1:
+		mov ax, 0
+		pop dx cx
+		ret
+		
+	possible_cut_1:
+		mov ax, 1
+		pop dx cx
+		ret
+
+Check_Possible_Cut_CX	endp
 ;===============================================================
 AddMessage_Input_Paper_Rock_Scissors proc
 	mov di, offset BufferString
@@ -567,8 +677,7 @@ AddMessage_Input_Paper_Rock_Scissors proc
 	call Add_BufferString_To_History
 
 	ret	 	
-	choose_msg1	   db 'Камень, ножницы, бумага?   '
-	
+	choose_msg1	   db 'Камень, ножницы, бумага?   '	
 AddMessage_Input_Paper_Rock_Scissors endp
 
 

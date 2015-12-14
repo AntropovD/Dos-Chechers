@@ -11,130 +11,127 @@ Start:
 		call Check_Com_Port
 		call Keyboard_CheckBuffer	
 		call Check_History_Buffer		
-	jmp Main_Loop
+	jmp Main_Loop		
+	
+Check_Mouse proc	
+	cmp MouseClick_flag, 1
+	jne check_mouse_exit
+	mov MouseClick_flag, 0	
+	
+	cmp STATE, 4
+	jl check_mouse_exit
+	
+	cmp TURN, 1
+	jne check_mouse_exit
+	
+	cmp CURSOR_X, 384
+	jge check_mouse_exit
+	cmp CURSOR_Y, 384
+	jge check_mouse_exit
 
-Check_Com_Port proc
-	call Serial_Check_Sth_Come	
-	je nothing_comes
+	cmp LAST_CHOSEN_BOX, 0ffffh
+	je first_pawn_in_move
 
-
-	call Serial_Get_Symbol_To_AL
-
-	____01h:
-		cmp al, 01h
-		jne not_01h
-		call Sync_Comes
-		jmp nothing_comes
-
-	not_01h:
-		cmp al, 'B'
-		jne not_B
-		cmp STATE, 1
-		jne not_B
-		mov STATE, 2
-		mov Opponent_Choise, 0ffh
-		jmp nothing_comes
-
-	not_B:
-		cmp al, 'C'
-		jne not_C
-		cmp STATE, 2
-		jne not_C
-		mov STATE, 3		
-		jmp nothing_comes
-
-	not_C:
-		cmp al, 'D'
-		jne not_D
-		mov di, offset BufferString
-		mov si, offset ready_msg
-		mov cx, 27
-		rep movsb
-		call Add_BufferString_To_History
-		mov STATE, 4
-
-	not_D:
-		cmp al, 'S'
-		jne not_S		
-		lea di, command_buffer
-		mov bx, 40
-		s_loop:
-			call Serial_Get_Str_To_DI	
-			cmp cx, 0
-			je s_loop
+	Continue_Moving:
+		call Get_Box_From_Coords
+		mov dx, ax				
+		mov cx, LAST_CHOSEN_BOX
 		
-	not_S:
-		cmp al, 'F'
-		jne not_F
-
-	not_F:
-		cmp al, 'G'
-		jne not_G
-
-	not_G:
-		cmp al, 'M'
-		jne not_M
-
-	not_M:
-		cmp al, 'U'
-		jne not_U
-
-	not_U:
-		cmp al, 'Y'
-		jne not_Y
-
-	not_Y:
-		cmp al, 'N'
-		jne not_N
-
-	not_N:
-		cmp al, 'R'
-		jne not_R
-
-	not_R:
-		cmp al, 'W'
-		jne not_W
-
-	not_W:
-		cmp al, 'H'
-		jne not_H
-	not_H:
-		cmp al, '1'
-		jne not_1
-		cmp State, 3		
-		jne not_1
-		mov Opponent_Choise, '1'
-		call Check_Opponent_Choise
-		ret
-
-	not_1:
-		cmp al, '2'
-		jne not_2
-		cmp State, 3 
-		jne not_2
-		mov Opponent_Choise, '2'
-		call Check_Opponent_Choise
-		ret
+		call Can_Cut_Pawn
+		cmp ax, 1
+		je Possible_Cut_Pawn
 		
+		call Check_Possible_Cut_CX
+		cmp ax, 1
+		je check_mouse_exit
 
-	not_2:
-		cmp al, '3'
-		jne not_3
-		cmp State, 3 
-		jne not_3
-		mov Opponent_Choise, '3'
-		call Check_Opponent_Choise
-		ret
+		call Can_Make_Move
+		cmp ax, 1
+		je Possible_Make_Move		
+		
+			call Unhighlight_Box
+			mov LAST_CHOSEN_BOX, 0ffffh
+			ret
+			
+		Possible_Make_Move:	
+			call Try_Make_Move		
+			mov TURN, 2			
+			mov LAST_CHOSEN_BOX, 0ffffh
+			ret
 
-	not_3:
+		Possible_Cut_Pawn:
+			call Try_Cut_Pawn	
+			call Check_Another_Possible_Cut		
+			cmp ax, 1
+			je can_another_cut
+			
+			push dx
+			cant_another_cut:
+				mov al, 'S'
+				call Serial_AL_To_Buf
+				mov cx, cb_pointer
+				sub cx, offset cut_buffer
+				mov bp, offset cut_buffer				
+				send_loop:
+					mov dx, [bp]
+					call Reverse_DX					
+					add dx, 3030h
+					mov al, dl
+					call Serial_AL_To_Buf
+					mov al, dh 
+					call Serial_AL_To_Buf
+					add bp, 2	
+					sub cx, 2
+					cmp cx, 0
+					jne send_loop
+				pop dx
+				call Reverse_DX
+				mov al, dh
+				add al, '0'
+				call Serial_AL_To_Buf		
+				mov al, dl
+				add al, '0'
+				call Serial_AL_To_Buf		
+				mov al, 'E'
+				call Serial_AL_To_Buf				
+				call Serial_Send_All	
+				mov LAST_CHOSEN_BOX, 0ffffh
+				mov TURN, 2
+				ret
+			can_another_cut:				
+				mov ax, dx				
+				mov LAST_CHOSEN_BOX, dx
+				mov bp, cb_pointer
+				mov byte ptr [bp], ah
+				mov byte ptr [bp+1], al		
+				add cb_pointer, 2
+				call Highlight_Box				
+				ret		
 
-	nothing_comes:
+	first_pawn_in_move:
+		call Check_If_Maximal_Cut_Way
+		cmp ax, 1
+		jne check_mouse_exit
+		call Get_Box_From_Coords				
+		mov bp, offset cut_buffer
+		mov cb_pointer, bp
+		mov byte ptr [bp], ah
+		mov byte ptr [bp+1], al		
+		add cb_pointer, 2
+		call Get_Board_Value_By_AX_to_AL
+		cmp al, 1
+		jne check_mouse_exit
+		call Highlight_Box
+		call Get_Box_From_Coords
+		mov LAST_CHOSEN_BOX, ax			
+	check_mouse_exit:
 	ret
-	command_buffer db 40 dup(0)
-	cmbuffer_point dw 0
-	ready_msg db 'Противник готов к игре     '	
-Check_Com_Port endp
-;===============================================================
+	
+	cut_buffer db 40 dup (0)
+	cb_pointer dw 0	
+Check_Mouse endp
+
+;==============================================================
 Init proc 
 	call Serial_Install
 	call Init_Graphic	
@@ -218,9 +215,12 @@ Exit_Procedure endp
 	ConnectionLost_flag db 0
 	Update_History_Buffer_Flag db 0	
 
-	STATE db 4
-	YOUR_COLOR db 1; 1 - white 2 - black
-	TURN db 1 ; 1- да, 2 - нет
+	; STATE db 4
+	; YOUR_COLOR db 2; 1 - white 2 - black
+	; TURN db 1 ; 1- да, 2 - нет
+	STATE db 0
+	YOUR_COLOR db 0; 1 - white 2 - black
+	TURN db 0; 1- да, 2 - нет
 
 	MY_CHOISE db 0ffh
 	OPPONENT_CHOISE db 0ffh

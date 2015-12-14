@@ -99,17 +99,17 @@ Enter_Pressed proc
 
 		call Can_Enemy_Do_Move_Command_Cx_Dx
 		cmp ax, 1
-		je can_move_command
+		je can_move_command_1
 
 		mov ax, cx
-		;your color?
+		
 		call Get_Board_Value_By_AX_to_AL
 		cmp al, 2
-		jne not_can_command
+		jne not_can_command_1
 
 		call Can_Enemy_Do_Pawn_Command_Cx_dx
 		cmp ax, 1
-		jne not_can_command
+		jne not_can_command_1
 
 		push cx dx
 
@@ -118,21 +118,21 @@ Enter_Pressed proc
 		sub si, 3
 		add di, 4
 		cmp si, di
-		je can_pawn_command
-		all_moves_loop:				
+		je can_pawn_command_1
+		all_moves_loop_1:				
 			mov cx, dx
 			mov dh, byte ptr[di]
 			mov dl, byte ptr[di+1]
 			sub dx, 3030h
 				call Can_Enemy_Do_Pawn_Command_Cx_dx
 				cmp ax, 1
-				jne __not_can_command_tvou_mat
+				jne __not_can_command_1_tvou_mat
 			add di, 2
 			cmp di, si
-			jne all_moves_loop
+			jne all_moves_loop_1
 		pop dx cx
 
-		can_pawn_command:
+		can_pawn_command_1:
 			mov di, MsgBuf_Pointer
 			mov byte ptr [di], '!'
 			inc MsgBuf_Pointer
@@ -144,7 +144,7 @@ Enter_Pressed proc
 			add di, 4
 			cmp si, di
 			je entered_move_back_1
-			all_cuts_loop:				
+			all_cuts_loop_1:				
 				mov cx, dx
 				mov dh, byte ptr[di]
 				mov dl, byte ptr[di+1]
@@ -154,19 +154,19 @@ Enter_Pressed proc
 				pop si
 				add di, 2
 				cmp di, si
-				jne all_cuts_loop
+				jne all_cuts_loop_1
 			
 			jmp entered_move_back
 
-		__not_can_command_tvou_mat:
+		__not_can_command_1_tvou_mat:
 			pop dx cx	
-		not_can_command:
+		not_can_command_1:
 			mov di, MsgBuf_Pointer
 			mov byte ptr [di], '-'
 			inc MsgBuf_Pointer
 			jmp entered_move_back
 
-		can_move_command:
+		can_move_command_1:
 			mov di, MsgBuf_Pointer
 			mov byte ptr [di], '+'
 			inc MsgBuf_Pointer

@@ -9,13 +9,22 @@ Init_Graphic proc
 
 	mov HB_Pointer, offset History_Buffer
 
+	; cmp YOUR_COLOR, 2
+	; jne not_change_Color
+		; mov bl, PAWN_WHITE
+		; mov bh, PAWN_BLACK
+		; mov PAWN_BLACK, bl
+		; mov PAWN_WHITE, bh	
+	; not_change_Color:
+	
 	call Init_Pawn_Buffer
 	call Draw_Chessboard
 	call Draw_Pawns
 	call Draw_Frame
 	call Draw_Message_Box
 
-	call Execute_Help_Command
+	
+		call Execute_Help_Command
 	ret
 Init_Graphic endp
 ;===============================================================
@@ -420,15 +429,8 @@ Check_History_Buffer endp
 ;===============================================================
 ; cx - заданная клекта в формате ah,al -> 1,1
 ;===============================================================
-Unhighlight_Box proc
-	mov ax, LAST_CHOSEN_BOX	
-	call Get_Board_Value_By_AX_to_AL
-	cmp al, 2
-	mov al, PAWN_WHITE	
-	jne black_pawn_unhighlight
-	mov al, PAWN_BLACK
-	black_pawn_unhighlight:
-
+Unhighlight_Box proc	
+	mov al, PAWN_WHITE
 	call Change_Colour
 
 	mov ax, LAST_CHOSEN_BOX
@@ -525,7 +527,7 @@ Repaint_Cell proc
 	pop dx cx	
 	ret	
 
-	chosen_cell_colour db ?
+	chosen_cell_colour db 0
 Repaint_Cell endp
 ;===============================================================
 	Index db ?
@@ -540,15 +542,14 @@ Repaint_Cell endp
 	King_Filename db 'IMG\KING.BMP',0
 	King_Buffer db 480h dup (0)
 
-
 	Empty_Frame_Part db 27 dup(32)
 	Frame_Part1 db 201, 27 dup (205), 187
 	Frame_Part2 db 186, 27 dup (32), 186
 	Frame_Part3 db 200, 27 dup(205), 188
 
 	Message_Box 	db 201, 48 dup(205), 187
-			db 186, 48 dup(32), 186
-			db 200, 48 dup(205), 188
+					db 186, 48 dup(32), 186
+					db 200, 48 dup(205), 188
 
 	HB_Pointer dw 0
 	History_Buffer db 756 dup (32)
