@@ -12,6 +12,41 @@ Check_Com_Port proc
 	
 	call Serial_Get_Symbol_To_AL
 	
+		
+		cmp message_buffer_1_flag, 1
+		jne check_username_buffer
+		cmp message_length, 0ffh
+		jne not_first_symbol_in_message
+		mov message_length, al
+		mov bp, offset message_buffer_1
+		mov byte ptr [bp], '$'
+		inc message_buffer_1_pointer
+		inc bp
+		mov byte ptr [bp], ' '
+		inc message_buffer_1_pointer
+		ret
+		not_first_symbol_in_message:
+			mov sync_exit, 0
+			mov bp, message_buffer_1_pointer
+			mov [bp], al
+			inc message_buffer_1_pointer
+			dec message_length
+			cmp message_length, 0
+			je $+3
+			ret 
+			mov message_buffer_1_flag, 0
+			mov message_length, 0ffh
+			mov cx, message_buffer_1_pointer
+			sub cx, offset message_buffer_1
+			cmp cx, 54
+			jl $+3			
+			ret
+			call Write_Arrived_Message
+			ret
+		
+		
+		
+	check_username_buffer:	
 		cmp username_buffer_flag, 1
 		jne check_cmd_buffer
 		cmp username_length, 0ffh
@@ -19,6 +54,7 @@ Check_Com_Port proc
 		mov username_length, al
 		ret
 		not_first_symbol_in_username:
+			mov sync_exit, 0
 			mov bp, username_pointer
 			mov [bp], al
 			inc username_pointer
@@ -44,11 +80,6 @@ Check_Com_Port proc
 			call Update_Name_Box
 			ret
 			
-			
-			; Enemy_Name db 20 dup(' ')
-			; Enemy_Name_Set db 0
-			; Enemy_Name_Default db 'Foe'
-	
 	
 	check_cmd_buffer:
 		cmp command_buffer_flag, 1
@@ -121,6 +152,10 @@ Check_Com_Port proc
 	not_G:
 		cmp al, 'M'
 		jne not_M
+		mov message_buffer_1_flag, 1
+		mov bp, offset message_buffer_1
+		mov message_buffer_1_pointer, bp
+		ret
 
 	not_M:
 		cmp al, 'U'
@@ -215,13 +250,19 @@ Check_Com_Port proc
 
 
 	command_buffer_flag db 0
-	command_buffer db 40 dup(0)
+	command_buffer db 40 dup(' ')
 	cmbuffer_pointer dw 0
 	
 	username_buffer_flag db 0
-	username_buffer db 40 dup(0)
+	username_buffer db 40 dup(' ')
 	username_pointer dw 0
 	username_length db 0ffh
+	
+	message_buffer_1_flag db 0
+	message_buffer_1 db 54 dup(' ')
+	message_buffer_1_pointer dw 0
+	message_length db 0ffh
+	
 	
 	ready_msg db 'Противник готов к игре     '	
 	drawn_msg db 'Соперник предложил ничью   ' 
@@ -374,6 +415,28 @@ AddMessage_YOU_WIN endp
 ;===============================================================
 was_Drawn db 0
 ;===============================================================
+Write_Arrived_Message proc
+	mov di, offset BufferString
+	lea si, message_buffer_1
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History	
+	
+	mov di, offset BufferString
+	lea si, message_buffer_1[27]
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History	
+		
+	mov si, offset message_buffer_1_empty
+	mov di, offset message_buffer_1
+	mov cx, 81
+	
+	rep movsb
+	
+	ret
+	message_buffer_1_empty db 54 dup(' ')
+Write_Arrived_Message endp
 ;===============================================================
 
 

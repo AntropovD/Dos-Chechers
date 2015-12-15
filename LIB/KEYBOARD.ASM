@@ -614,7 +614,6 @@ Execute_Scissors_Cmd proc
 	ret
 Execute_Scissors_Cmd endp
 ;===============================================================
-
 Execute_Send_Cmd proc
 	mov cx, MsgBuf_Pointer
 	sub cx, offset Message_Buffer
@@ -648,7 +647,7 @@ Execute_Send_Cmd proc
 	call Serial_Send_All
 	
 	mov di, offset BufferString
-	mov si, offset send_msg
+	lea si, send_msg
 	mov cx, 27
 	rep movsb
 	call Add_BufferString_To_History
@@ -659,15 +658,14 @@ Execute_Send_Cmd proc
 	rep movsb
 	call Add_BufferString_To_History
 	
-	mov di, offset BufferString
-	lea si, send_msg[54]
-	mov cx, 27
+	lea si, empty_send_msg
+	lea di, send_msg
+	mov cx, 54
 	rep movsb
-	call Add_BufferString_To_History
-	
 	ret
 	
-	send_msg db 81 dup (' ')
+	send_msg db 54 dup (' ')
+	empty_send_msg db 54 dup(' ')
 Execute_Send_Cmd endp
 ;===============================================================
 Execute_Surrend_Cmd proc
@@ -855,14 +853,14 @@ Update_Name_Box proc
 	rep movsb
 	
 	mov ax, 1300h
-	mov bx, 07h
+	mov bx, 0fh
 	mov cx, 45
 	mov dx, 1903h
 	mov bp, offset empty_string_1
 	int 10h	
 	
 	mov ax, 1300h
-	mov bx, 07h
+	mov bx, 0fh
 	mov cx, rs_length
 	mov dx, 1903h
 	mov bp, offset result_string
