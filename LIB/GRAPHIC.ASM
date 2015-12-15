@@ -22,6 +22,7 @@ Init_Graphic proc
 	call Draw_Pawns
 	call Draw_Frame
 	call Draw_Message_Box
+	call Update_Name_Box
 
 	
 		call Execute_Help_Command

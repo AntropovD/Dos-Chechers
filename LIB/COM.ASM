@@ -11,9 +11,48 @@ Check_Com_Port proc
 	je nothing_comes
 	
 	call Serial_Get_Symbol_To_AL
-
-	cmp command_buffer_flag, 1
-	jne ____01h
+	
+		cmp username_buffer_flag, 1
+		jne check_cmd_buffer
+		cmp username_length, 0ffh
+		jne not_first_symbol_in_username
+		mov username_length, al
+		ret
+		not_first_symbol_in_username:
+			mov bp, username_pointer
+			mov [bp], al
+			inc username_pointer
+			dec username_length
+			cmp username_length, 0
+			je $+3
+			ret
+			mov username_buffer_flag, 0
+			mov username_length, 0ffh
+			
+			mov cx, username_pointer
+			sub cx, offset username_buffer
+			
+			cmp cx, 20
+			jl $+3
+			ret
+			mov Enemy_Name_Set, cl
+			mov si, offset username_buffer
+			mov di, offset Enemy_Name
+			
+			rep movsb
+			
+			call Update_Name_Box
+			ret
+			
+			
+			; Enemy_Name db 20 dup(' ')
+			; Enemy_Name_Set db 0
+			; Enemy_Name_Default db 'Foe'
+	
+	
+	check_cmd_buffer:
+		cmp command_buffer_flag, 1
+		jne ____01h
 		cmp al, 'E'
 		je Execute_Commmand_From_Serial
 		mov bp, cmbuffer_pointer
@@ -86,14 +125,35 @@ Check_Com_Port proc
 	not_M:
 		cmp al, 'U'
 		jne not_U
-
+		mov username_buffer_flag, 1
+		mov bp, offset username_buffer
+		mov username_pointer, bp
+		mov di, offset BufferString
+		mov si, offset send_name_msg_2
+		mov cx, 27
+		rep movsb
+		call Add_BufferString_To_History
+		
+		ret
+		
 	not_U:
 		cmp al, 'Y'
 		jne not_Y
+		cmp Your_Drawn, 1
+		je $+3
+		ret
+		call EXECUTE_DRAWN_AGREE
+		ret
 
 	not_Y:
 		cmp al, 'N'
 		jne not_N
+		cmp Your_Drawn, 1
+		je $+3
+		ret
+		mov your_drawn, 0
+		mov was_Drawn,0
+		ret
 
 	not_N:
 		cmp al, 'R'
@@ -157,8 +217,15 @@ Check_Com_Port proc
 	command_buffer_flag db 0
 	command_buffer db 40 dup(0)
 	cmbuffer_pointer dw 0
+	
+	username_buffer_flag db 0
+	username_buffer db 40 dup(0)
+	username_pointer dw 0
+	username_length db 0ffh
+	
 	ready_msg db 'Противник готов к игре     '	
 	drawn_msg db 'Соперник предложил ничью   ' 
+	send_name_msg_2 db 'Соперник представился      '
 Check_Com_Port endp
 ;===============================================================
 Sync_Comes proc

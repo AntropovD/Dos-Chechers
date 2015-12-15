@@ -614,9 +614,60 @@ Execute_Scissors_Cmd proc
 	ret
 Execute_Scissors_Cmd endp
 ;===============================================================
-Execute_Send_Cmd proc
 
+Execute_Send_Cmd proc
+	mov cx, MsgBuf_Pointer
+	sub cx, offset Message_Buffer
+	cmp cx, 5
+	jg $+3	
+	ret	
+	
+	sub cx, 5
+	mov si, offset Message_Buffer
+	add si, 5	
+	
+	mov al, 'M'
+	call Serial_AL_To_Buf
+	mov al, cl
+	call Serial_AL_To_Buf
+	
+	mov di, offset send_msg
+	mov al, '#'
+	stosb
+	mov al, ' '
+	stosb
+	
+	next_symbol:
+		lodsb
+		push di
+		call Serial_AL_To_Buf
+		pop di
+		stosb	
+		loop next_symbol
+	
+	call Serial_Send_All
+	
+	mov di, offset BufferString
+	mov si, offset send_msg
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History
+	
+	mov di, offset BufferString
+	lea si, send_msg[27]
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History
+	
+	mov di, offset BufferString
+	lea si, send_msg[54]
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History
+	
 	ret
+	
+	send_msg db 81 dup (' ')
 Execute_Send_Cmd endp
 ;===============================================================
 Execute_Surrend_Cmd proc
@@ -655,9 +706,11 @@ Execute_Drawn_Cmd proc
 	call Add_BufferString_To_History
 	mov al, 'G'
 	call Serial_AL_To_Buf
-	call Serial_Send_All	
+	call Serial_Send_All
+	mov your_drawn, 1
 	ret	
 	drdr_msg db 'Вы предложили ничью        '
+	your_drawn db 0
 Execute_Drawn_Cmd endp
 ;===============================================================
 Execute_Yeah_Cmd proc
@@ -673,7 +726,7 @@ Execute_Yeah_Cmd proc
 		cmp STATE, 4
 		je $+3
 		ret
-		cmp was_Drawn, 0
+		cmp was_Drawn, 1
 		je $+3
 		ret
 		
@@ -685,8 +738,8 @@ Execute_Yeah_Cmd proc
 		mov al, 'Y'
 		call Serial_AL_To_Buf
 		call Serial_Send_All
-		call Execute_Accept_Draw
-		mov was_Drawn, 0
+		call EXECUTE_DRAWN_AGREE
+		mov was_Drawn, 0		
 		
 		ret
 		accept_draw_msg db 'Принимаете ничью           '
@@ -700,7 +753,7 @@ Execute_Nope_Cmd proc
 		cmp STATE, 4
 		je $+3
 		ret
-		cmp was_Drawn, 0
+		cmp was_Drawn, 1
 		je $+3
 		ret
 		
@@ -719,12 +772,106 @@ Execute_Nope_Cmd proc
 Execute_Nope_Cmd endp
 ;===============================================================
 Execute_Username_Cmd proc
-
+	mov cx, MsgBuf_Pointer
+	sub cx, offset Message_Buffer
+	sub cx, 9
+	cmp cx, 20
+	jb $+3
 	ret
+	cmp cx, 0
+	ja $+3
+	ret
+	
+	push cx
+	mov di, offset BufferString
+	mov si, offset send_name_msg
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History
+	
+	pop cx
+	mov al, 'U'
+	call Serial_AL_To_Buf
+	mov al, cl
+	call Serial_AL_To_Buf
+	
+	mov si, offset Message_Buffer
+	add si, 9
+	mov di, offset Your_Name
+	mov Your_Name_Set, cl
+	add_username_loop:
+		lodsb
+		push di
+		call Serial_AL_To_Buf
+		pop di
+		stosb
+		loop add_username_loop
+	
+	call Serial_Send_All
+	call Update_Name_Box
+	ret
+	send_name_msg db 'Вы представились сопернику '
 Execute_Username_Cmd endp
 ;===============================================================
-Your_Name db 30 dup(' ')
-Enemy_Name db 30 dup(' ')
+Your_Name db 20 dup(' ')
+Your_Name_Set db 0
+Your_Name_Default db 'You'
+Enemy_Name db 20 dup(' ')
+Enemy_Name_Set db 0
+Enemy_Name_Default db 'Foe'
 ;===============================================================
+Update_Name_Box proc
+	xor cx, cx
+	cmp Your_Name_Set, 0
+	mov cx, 3
+	mov si, offset Your_Name_Default
+	je name_here_1
+	mov cl, Your_Name_Set
+	mov si, offset Your_Name
+	name_here_1:
+	
+	mov rs_length, cx
+	
+	mov di, offset result_string
+	
+	rep movsb
+	mov al, ' '
+	stosb
+	mov al, ':'
+	stosb
+	mov al, ' '
+	stosb
+	add rs_length, 3
+	
+	cmp Enemy_Name_Set, 0
+	mov cx, 3
+	mov si, offset Enemy_Name_Default
+	je name_here_2
+	mov cl, Enemy_Name_Set
+	mov si, offset Enemy_Name
+	name_here_2:
+	add rs_length, cx
+	
+	rep movsb
+	
+	mov ax, 1300h
+	mov bx, 07h
+	mov cx, 45
+	mov dx, 1903h
+	mov bp, offset empty_string_1
+	int 10h	
+	
+	mov ax, 1300h
+	mov bx, 07h
+	mov cx, rs_length
+	mov dx, 1903h
+	mov bp, offset result_string
+	int 10h	
+	
+	ret
+	result_string db 50 dup (' ')
+	empty_string_1 db 50 dup(' ')
+	rs_length dw 0
+Update_Name_Box endp
 ;===============================================================
 ;===============================================================

@@ -714,9 +714,27 @@ Check_Agree_For_New proc
 		ret
 Check_Agree_For_New endp
 ;===============================================================
-Execute_Accept_Draw proc
+EXECUTE_DRAWN_AGREE proc
+	cmp STATE, 4
+	je $+3
 	ret
-Execute_Accept_Draw endp
+	mov STATE, 6
+	mov di, offset BufferString
+	mov si, offset drawn_agree_msg
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History	
+	
+	mov di, offset BufferString
+	mov si, offset again_msg
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History	
+	
+	ret	
+ 	drawn_agree_msg db 'Ничья!                     '
+	ret
+EXECUTE_DRAWN_AGREE endp
 ;===============================================================
 AddMessage_Input_Paper_Rock_Scissors proc
 	mov di, offset BufferString
