@@ -395,6 +395,9 @@ Check_Opponent_Choise  proc
 			mov MY_CHOISE, 0ffh
 			mov Opponent_Choise, 0ffh
 			call AddMessage_Equal
+			mov al, 'B'
+			call Serial_AL_To_Buf	
+			call Serial_Send_All
 			ret
 
 		you_win:
@@ -440,6 +443,8 @@ Win_Rock proc
 	call Draw_Pawns
 	mov ax, 1
 	int 33h
+	call AddMessage_Your_Turn
+	
 	ret
 
 	win_rock_msg db 'Розыгрыш хода выигран.     '
@@ -475,6 +480,7 @@ Lose_Rock proc
 	mov ax, 1
 	int 33h
 	mov TURN, 2
+	call AddMessage_Enemy_Turn
 	
 	ret
 	lost_rock_msg db 'Розыгрыш хода проигран.    '

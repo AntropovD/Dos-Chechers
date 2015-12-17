@@ -6,9 +6,12 @@ Send_Sync_Impulse proc
 	ret
 Send_Sync_Impulse endp
 ;===============================================================
+
 Check_Com_Port proc
 	call Serial_Check_Sth_Come	
 	je nothing_comes
+	
+	
 	
 	call Serial_Get_Symbol_To_AL
 	
@@ -99,8 +102,6 @@ Check_Com_Port proc
 	not_01h:
 		cmp al, 'B'
 		jne not_B
-		cmp STATE, 1
-		jne nothing_comes
 		mov STATE, 2
 		mov Opponent_Choise, 0ffh
 		jmp nothing_comes
@@ -274,7 +275,12 @@ Sync_Comes proc
 	cmp STATE, 0
 	jne exit_of_here
 	mov STATE, 1
-	call Connection_Estabilished	
+	call Connection_Estabilished
+	mov al, 01h
+	call Serial_AL_To_Buf
+	mov al, 'B'
+	call Serial_AL_To_Buf	
+	call Serial_Send_All
 	exit_of_here:
 	ret
 Sync_Comes endp

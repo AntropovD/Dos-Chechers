@@ -566,27 +566,29 @@ Execute_Help_Command proc
 Execute_Help_Command endp
 ;===============================================================
 Execute_Rock_Cmd proc
-	cmp STATE, 0
-	jne $+3
+	cmp STATE, 2
+	jge $+3
 	ret
-	mov al, 'B'
-	call Serial_AL_To_Buf	
+	cmp STATE, 4
+	jle $+3
+	ret
 	mov MY_CHOISE, '1'
 	mov al, 'C'
 	call Serial_AL_To_Buf
 	mov al, '1'
 	call Serial_AL_To_Buf
 	call Serial_Send_All
-	call Check_Opponent_Choise	
+	call Check_Opponent_Choise		
 	ret
 Execute_Rock_Cmd endp
 ;===============================================================
 Execute_Paper_Cmd proc
-	cmp STATE, 0
-	jne $+3
+	cmp STATE, 2
+	jge $+3
 	ret
-	mov al, 'B'
-	call Serial_AL_To_Buf	
+	cmp STATE, 4
+	jle $+3
+	ret
 	mov MY_CHOISE, '3'
 	mov al, 'C'
 	call Serial_AL_To_Buf
@@ -598,11 +600,12 @@ Execute_Paper_Cmd proc
 Execute_Paper_Cmd endp
 ;===============================================================
 Execute_Scissors_Cmd proc
-	cmp STATE, 0
-	jne $+3
+	cmp STATE, 2
+	jge $+3
 	ret
-	mov al, 'B'
-	call Serial_AL_To_Buf
+	cmp STATE, 4
+	jle $+3
+	ret
 	mov MY_CHOISE, '2'
 	mov al, 'C'
 	call Serial_AL_To_Buf
