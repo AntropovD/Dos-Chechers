@@ -271,6 +271,7 @@ Check_Com_Port proc
 Check_Com_Port endp
 ;===============================================================
 Sync_Comes proc
+	cli
 	mov sync_exit, 0
 	cmp STATE, 0
 	jne exit_of_here
@@ -282,6 +283,7 @@ Sync_Comes proc
 	call Serial_AL_To_Buf	
 	call Serial_Send_All
 	exit_of_here:
+	sti
 	ret
 Sync_Comes endp
 ;===============================================================
@@ -357,28 +359,6 @@ AddMessage_Enemy_Turn proc
 	ret	
  	enemy_move_msg db 'Ход противника             '
 AddMessage_Enemy_Turn endp
-;===============================================================
-AddMessage_Turn_Confirm proc
-	mov di, offset BufferString
-	mov si, offset confirm_move_msg
-	mov cx, 27
-	rep movsb
-	call Add_BufferString_To_History
-
-	ret	
- 	confirm_move_msg db 'Подтверждение хода         '
-AddMessage_Turn_Confirm endp
-;===============================================================
-AddMessage_Turn_Accept proc
-	mov di, offset BufferString
-	mov si, offset accept_move_msg
-	mov cx, 27
-	rep movsb
-	call Add_BufferString_To_History
-
-	ret	
- 	accept_move_msg db 'Ход подтвержден            '
-AddMessage_Turn_Accept endp
 ;===============================================================
 ENEMY_SURRENDER proc
 	cmp STATE, 4

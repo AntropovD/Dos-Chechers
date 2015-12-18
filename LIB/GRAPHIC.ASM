@@ -298,6 +298,7 @@ Draw_Pawns endp
 		ret
 	Draw_BlackKing endp
 	Draw_King proc
+		cli
 		mov X, 0
 		mov Y, 0
 		mov si, offset King_Buffer
@@ -327,6 +328,7 @@ Draw_Pawns endp
 
 		draw_king_exit:
 			sub dx, 48
+			sti
 			ret
 	Draw_King endp
 ;===============================================================
@@ -411,7 +413,13 @@ Highlight_Chosen_Box  proc
 
 	mov ax, 2
 	int 33h
-	call Draw_Pawn
+	cmp Last_Was_King, 1	
+	je draw_king_1
+		call Draw_Pawn
+		jmp fin_drawing_pawn
+	draw_king_1:
+		call Draw_King
+	fin_drawing_pawn:
 	mov ax, 1
 	int 33h
 

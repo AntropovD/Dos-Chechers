@@ -20,7 +20,6 @@ Mouse_Handler:
 	mov MouseClick_flag, 1	
 	retf
 ;===============================================================
-
 Check_Mouse proc	
 	cmp MouseClick_flag, 1
 	jne check_mouse_exit
@@ -109,6 +108,10 @@ Check_Mouse proc
 			can_another_cut:				
 				mov ax, dx				
 				mov LAST_CHOSEN_BOX, dx
+				cmp dl, 8
+				jne not_put_king
+				mov Last_Was_King, 1
+				not_put_king:
 				mov bp, cb_pointer
 				mov byte ptr [bp], ah
 				mov byte ptr [bp+1], al		
@@ -128,10 +131,20 @@ Check_Mouse proc
 		add cb_pointer, 2
 		call Get_Board_Value_By_AX_to_AL
 		cmp al, 1
-		jne check_mouse_exit
-		call Highlight_Box
-		call Get_Box_From_Coords
-		mov LAST_CHOSEN_BOX, ax			
+		je sth_good_pawn
+		cmp al, 3
+		je sth_good_king
+		jmp check_mouse_exit
+		sth_good_king:
+			mov Last_Was_King, 1
+			jmp sth_good
+		sth_good_pawn:
+			mov Last_Was_King, 0
+		sth_good:
+			jne check_mouse_exit
+			call Highlight_Box
+			call Get_Box_From_Coords
+			mov LAST_CHOSEN_BOX, ax			
 	check_mouse_exit:
 	ret
 	
@@ -180,9 +193,13 @@ Add_BufferString_To_History endp
 ;===============================================================
 ;return BOARD[ah*8+al]
 Get_Board_Value_By_AX_to_AL proc
-	push cx dx
+	push bx cx dx	
 	dec ah
 	dec al
+	cmp ah, 7 
+	jg fail_get_value
+	cmp al, 7
+	jg fail_get_value
 
 	mov bx, ax
 	mov ax, 7
@@ -193,15 +210,19 @@ Get_Board_Value_By_AX_to_AL proc
 	add ax, bx
 	mov bp, ax
 	mov al, byte ptr BOARD[bp]	
-	pop dx cx
+	pop dx cx bx
 	ret	
+	
+	fail_get_value:
+		mov ax, 0ffh
+		pop dx cx bx
+		ret
 Get_Board_Value_By_AX_to_AL endp
 ;===============================================================
 Update_Hist_Buf proc
 	push cs 
 	pop es
 	
-	cli
 	mov ax, 1300h
 	mov bx, 0fh
 	mov cx, 27
@@ -217,7 +238,6 @@ Update_Hist_Buf proc
 		bp_ret:
 		cmp bp, HB_Pointer		
 		jne up_hist_buf_loop
-		sti
 	ret
 
 	bp_overflow:
@@ -235,3 +255,4 @@ Check_If_Maximal_Cut_Way endp
 	CURSOR_Y dw ?
 	MouseClick_flag db 0
 	BufferString db 27 dup(' ')
+	Last_Was_King db 0

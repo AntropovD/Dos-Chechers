@@ -272,16 +272,17 @@ Is_Digit_Al endp
 Can_Enemy_Do_Move_Command_Cx_Dx proc
 	; check if board[cx] = color, board[dx] = empty
 	mov ax, cx
-	call Get_Board_Value_By_AX_to_AL
-	cmp al, 2
-	jne not_can_enemy_do_command
+	; call Get_Board_Value_By_AX_to_AL
+	; cmp al, 2
+	; jne not_can_enemy_do_command
 
 	mov ax, dx
 	call Get_Board_Value_By_AX_to_AL
 	cmp al, 0
 	jne not_can_enemy_do_command 
 	; distance check
-	call Can_Enemy_Move_Like_This_Cx_Dx
+	
+	call Can_Enemy_Move_Like_This_Cx_Dx	
 	cmp ax, 1
 	jne not_can_enemy_do_command
 	
@@ -291,6 +292,8 @@ Can_Enemy_Do_Move_Command_Cx_Dx proc
 	not_can_enemy_do_command:
 		mov ax, 0
 		ret
+		
+		
 Can_Enemy_Do_Move_Command_Cx_Dx endp
 ;===============================================================
 Can_Enemy_Move_Like_This_Cx_Dx proc
@@ -369,15 +372,11 @@ Execute_Enemy_Pawn_Command endp
 Update_Everything proc
 		mov ax, 12h
 		int 10h
-		mov ax, 2
-		int 33h
 		call Draw_Chessboard
 		call Draw_Pawns
 		call Draw_Frame		
 		call Draw_Message_Box
 		call Update_Hist_Buf
-		mov ax, 1
-		int 33h
 		mov LAST_CHOSEN_BOX, 0ffffh
 	ret
 Update_Everything endp
@@ -569,7 +568,7 @@ Execute_Rock_Cmd proc
 	cmp STATE, 2
 	jge $+3
 	ret
-	cmp STATE, 4
+	cmp STATE, 3
 	jle $+3
 	ret
 	mov MY_CHOISE, '1'
@@ -586,7 +585,7 @@ Execute_Paper_Cmd proc
 	cmp STATE, 2
 	jge $+3
 	ret
-	cmp STATE, 4
+	cmp STATE, 3
 	jle $+3
 	ret
 	mov MY_CHOISE, '3'
@@ -603,7 +602,7 @@ Execute_Scissors_Cmd proc
 	cmp STATE, 2
 	jge $+3
 	ret
-	cmp STATE, 4
+	cmp STATE, 3
 	jle $+3
 	ret
 	mov MY_CHOISE, '2'

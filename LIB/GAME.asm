@@ -2,20 +2,29 @@
 Can_Make_Move proc
 	push cx dx
 
-	mov ax, cx
-	;твой цвет?
-	call Get_Board_Value_By_AX_to_AL
-	cmp al, 1
-	jne fail_make_move
-	; пустая клетка
 	mov ax, dx
 	call Get_Board_Value_By_AX_to_AL
 	cmp al, 0
 	jne fail_make_move
-
-	call Can_Pawn_Move_like_This_Cx_Dx
-	cmp ax, 0
-	je fail_make_move		
+	
+	mov ax, cx	
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 1
+	je Is_pawn_move_check
+	cmp al, 3
+	je Is_king_move_check
+	jmp fail_make_move	
+	
+	Is_king_move_check:
+		call Can_King_Move_like_This_Cx_Dx
+		cmp ax, 0
+		je fail_make_move
+		jmp success_make_move
+	
+	Is_pawn_move_check:
+		call Can_Pawn_Move_like_This_Cx_Dx
+		cmp ax, 0
+		je fail_make_move		
 	
 	success_make_move:
 		mov ax, 1
@@ -97,7 +106,13 @@ Draw_New_Pawn_On_Screen proc
 	pop bx
 	mov al, bl
 	call Change_Colour
- 	call Draw_Pawn
+	cmp Last_Was_King, 1
+	je draw_king_mm
+		call Draw_Pawn
+		jmp draw_king_fin
+	draw_king_mm:
+		call Draw_King
+	draw_king_fin:	
  	mov ax, 1 
  	int 33h
 
@@ -108,11 +123,19 @@ Draw_New_Pawn_On_Screen endp
 Try_Make_Move proc
 	push cx dx
 	call Repaint_Cell	
-	call Remove_Pawn_From_Board
+	call Remove_Pawn_From_Board	
+	
+	cmp dl, 8
+	je King_Moves
+	cmp Last_Was_King, 1
+	je King_Moves
+	
 	mov bl, 1
 	call Set_New_Pawn_On_Board
 	mov bl, PAWN_WHITE
 	call Draw_New_Pawn_On_Screen
+	
+	King_Moves_Back:
 	pop dx cx
 	SEND_COMMAND:
 		call Reverse_Cx_Dx
@@ -135,7 +158,16 @@ Try_Make_Move proc
 		call Serial_Send_All	
 	
 	ret
-Try_Make_Move endp
+	
+	King_Moves:
+		mov Last_Was_King, 1
+		mov bl, 3
+		call Set_New_Pawn_On_Board
+		mov bl, PAWN_WHITE
+		call Draw_New_Pawn_On_Screen
+		jmp King_Moves_Back
+		
+Try_Make_Move endp	
 ;===============================================================
 Can_Pawn_Move_like_This_Cx_Dx proc
 	push cx dx
@@ -151,7 +183,7 @@ Can_Pawn_Move_like_This_Cx_Dx proc
 	cmp dh, 31h
 	jg pawn_cant
 
-
+	pawn_can:
 		mov ax, 1
 		pop dx cx
 		ret
@@ -160,6 +192,107 @@ Can_Pawn_Move_like_This_Cx_Dx proc
 		pop dx cx
 		ret	
 Can_Pawn_Move_like_This_Cx_Dx endp
+;===============================================================
+
+Can_King_Move_like_This_Cx_Dx proc
+	push cx dx
+	
+	cmp cx, dx
+	je king_cant
+	
+	cmp cl, dl
+	je one_horizontal
+	cmp ch, dh
+	je one_vertical
+	
+	cmp ch, dh
+	mov bh, 1	
+	jl bh_More_0
+	mov bh, -1
+	bh_More_0:
+	
+	cmp cl, dl
+	mov bl, 1
+	jl bl_More_0
+	mov bl, -1
+	bl_More_0:
+	
+	diagonal_check:
+		add ch, bh
+		add cl, bl
+		mov ax, cx
+		
+		call Get_Board_Value_By_AX_to_AL
+		
+		cmp al, 0
+		jne king_cant
+		cmp cx, dx
+		jne diagonal_check	
+	jmp king_can
+	
+	
+	
+	one_horizontal:
+		cmp ch, dh
+		jl try_moving_right
+		try_moving_left:
+			moving_left_loop:
+			dec ch
+			mov ax, cx
+			call Get_Board_Value_By_AX_to_AL
+			cmp al, 0
+			jne king_cant
+			cmp dh, ch
+			jne moving_left_loop
+			jmp king_can
+			
+		try_moving_right:
+			moving_right_loop:
+			inc ch
+			mov ax, cx
+			call Get_Board_Value_By_AX_to_AL
+			cmp al, 0
+			jne king_cant
+			cmp dh, ch
+			jne moving_right_loop
+			jmp king_can			
+	jmp king_cant
+	
+	one_vertical:
+		cmp cl, dl
+		jl try_moving_upper
+		try_moving_dwn:
+			moving_dwn_loop:
+			dec cl
+			mov ax, cx
+			call Get_Board_Value_By_AX_to_AL
+			cmp al, 0
+			jne king_cant
+			cmp dl, cl
+			jne moving_dwn_loop
+			jmp king_can
+			
+		try_moving_upper:
+			moving_up_loop:
+			inc cl
+			mov ax, cx
+			call Get_Board_Value_By_AX_to_AL
+			cmp al, 0
+			jne king_cant
+			cmp dl, cl
+			jne moving_up_loop
+			jmp king_can		
+	jmp king_cant
+
+	king_can:
+		mov ax, 1
+		pop dx cx
+		ret
+	king_cant:
+		mov ax,0
+		pop dx cx
+		ret	
+Can_King_Move_like_This_Cx_Dx endp
 ;===============================================================
 Can_Pawn_Cut_like_This_Cx_Dx proc
 	push cx dx
@@ -203,7 +336,12 @@ Can_Cut_Pawn proc
 	;your color
 	call Get_Board_Value_By_AX_to_AL
 	cmp al, 1
-	jne fail_cut
+	je pawn_cut_possible
+	cmp al, 3 
+	je pawn_cut_possible
+	jmp fail_cut
+	
+	pawn_cut_possible:
 	; enemy pawn
 	mov ax, dx
 	call Get_Board_Value_By_AX_to_AL
@@ -236,6 +374,8 @@ Try_Cut_Pawn proc
 	call Repaint_Pawned_Cell
 	call Remove_Pawn_From_Board
 	call Remove_Pawned_Pawn_From_Board
+	
+	cmp Last_Was_King, 1
 	mov bl, 1
 	call Set_New_Pawn_On_Board
 	mov bl, PAWN_WHITE
@@ -437,9 +577,13 @@ Win_Rock proc
 	call Serial_Send_All
 	
 	mov YOUR_COLOR, 1
+	mov PAWN_BLACK, 0
+	mov PAWN_WHITE, 7
 	mov TURN, 1	
 	mov ax, 2
 	int 33h
+	call Draw_Chessboard
+	call Send_Sync_Impulse 
 	call Draw_Pawns
 	mov ax, 1
 	int 33h
@@ -469,13 +613,13 @@ Lose_Rock proc
 	call Serial_Send_All
 
 	mov YOUR_COLOR, 2	
-	mov bl, PAWN_WHITE
-	mov bh, PAWN_BLACK
-	mov PAWN_BLACK, bl
-	mov PAWN_WHITE, bh	
+	mov PAWN_BLACK, 7
+	mov PAWN_WHITE, 0
 
 	mov ax, 2
 	int 33h
+	call Draw_Chessboard
+	call Send_Sync_Impulse 
 	call Draw_Pawns
 	mov ax, 1
 	int 33h
@@ -540,7 +684,6 @@ Reverse_DX proc
 	ret
 Reverse_DX endp
 ;===============================================================
-
 ExecuteCommand_In_Di_Size_CX proc
 	mov cmd_size, cx
 	push di
@@ -640,6 +783,7 @@ ExecuteCommand_In_Di_Size_CX proc
 			ret	
 	
 	cmd_size dw 0
+	Enemy_Was_King db 0
 ExecuteCommand_In_Di_Size_CX endp
 ;===============================================================
 Check_Possible_Cut_CX proc

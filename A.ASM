@@ -6,16 +6,12 @@ Start:
 	call Init
 
 	Main_Loop:		
-		hlt
-		call Check_Mouse
+		hlt		
 		call Check_Com_Port
+		call Check_Mouse
 		call Keyboard_CheckBuffer	
 		call Check_History_Buffer		
-	jmp Main_Loop		
-	
-
-
-
+	jmp Main_Loop
 ;==============================================================
 Init proc 
 	call Serial_Install
@@ -63,17 +59,21 @@ interrupt_08h proc
 	cmp sync_send, 20
 	jl not_sync_send
 	call Send_Sync_Impulse	
+	call Check_Com_Port
 	mov sync_send, 0
 	
 	not_sync_send:	
 	cmp sync_exit, 60
 	jl not_sync_exit
-	cmp State, 0
-		je not_connectionLost
-		mov State, 0
-		call ConnectionLost_Message	
-		call RESET_BOARD
-		call Update_Everything
+	; cmp State, 0
+		; je not_connectionLost
+		; mov State, 0
+		; mov TURN, 0
+		; mov YOUR_COLOR, 0	
+		; mov MY_CHOISE, 0ffh
+		; mov OPPONENT_CHOISE, 0ffh		
+		; call ConnectionLost_Message	
+		; call RESET_BOARD
 
 	not_connectionLost:
 	not_sync_exit:
@@ -92,7 +92,7 @@ Exit_Procedure proc
 	int 20h
 	ret
 Exit_Procedure endp	
-;===============================================================		
+;===============================================================
 	sync_send db 0
 	sync_exit db 0
 
@@ -126,7 +126,6 @@ Exit_Procedure endp
 		db 1, 1, 1, 1, 1, 1, 1, 1
 		db 1, 1, 1, 1, 1, 1, 1, 1
 		db 0, 0, 0, 0, 0, 0, 0, 0
-
 	INITIALIZE_BOARD db 0, 0, 0, 0, 0, 0, 0, 0
 		db 2, 2, 2, 2, 2, 2, 2, 2
 		db 2, 2, 2, 2, 2, 2, 2, 2
