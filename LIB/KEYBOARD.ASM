@@ -377,6 +377,9 @@ Update_Everything proc
 		call Draw_Frame		
 		call Draw_Message_Box
 		call Update_Hist_Buf
+		mov ax, 1
+		int 33h
+	
 		mov LAST_CHOSEN_BOX, 0ffffh
 	ret
 Update_Everything endp

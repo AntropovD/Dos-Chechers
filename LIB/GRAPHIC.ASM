@@ -9,13 +9,13 @@ Init_Graphic proc
 
 	mov HB_Pointer, offset History_Buffer
 
-	; cmp YOUR_COLOR, 2
-	; jne not_change_Color
-		; mov bl, PAWN_WHITE
-		; mov bh, PAWN_BLACK
-		; mov PAWN_BLACK, bl
-		; mov PAWN_WHITE, bh	
-	; not_change_Color:
+	cmp YOUR_COLOR, 2
+	jne not_change_Color
+		mov bl, PAWN_WHITE
+		mov bh, PAWN_BLACK
+		mov PAWN_BLACK, bl
+		mov PAWN_WHITE, bh	
+	not_change_Color:
 	
 	call Init_Pawn_Buffer
 	call Draw_Chessboard
@@ -494,10 +494,10 @@ Repaint_Pawned_Cell proc
 Repaint_Pawned_Cell endp
 ;===============================================================
 ; cx
-Repaint_Cell proc 
+Repaint_Cell proc 	
+	push bx cx dx
 	mov bl, CHESSBOARD_BLACK
 	mov chosen_cell_colour, bl
-	push cx dx
 	and ch, 0001b
 	and cl, 0001b
 	cmp ch, cl
@@ -533,7 +533,7 @@ Repaint_Cell proc
  	mov ax, 1 
  	int 33h
 
-	pop dx cx	
+	pop dx cx bx
 	ret	
 
 	chosen_cell_colour db 0

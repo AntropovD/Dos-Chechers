@@ -44,6 +44,10 @@ Check_Mouse proc
 		mov dx, ax				
 		mov cx, LAST_CHOSEN_BOX
 		
+		call Can_Cut_King_Position_To_Bx
+		cmp ax, 1
+		je Possible_Cut_King
+		
 		call Can_Cut_Pawn
 		cmp ax, 1
 		je Possible_Cut_Pawn
@@ -62,9 +66,17 @@ Check_Mouse proc
 			
 		Possible_Make_Move:	
 			call Try_Make_Move		
-			mov TURN, 2			
+			;mov TURN, 2			
 			mov LAST_CHOSEN_BOX, 0ffffh
 			ret
+		
+		Possible_Cut_King:
+			mov Last_Was_King, 1
+			call Try_Cut_King
+			call Check_Another_Possible_Cut_King
+			cmp ax, 1
+			je can_another_cut			
+			jmp cant_another_cut			
 
 		Possible_Cut_Pawn:
 			call Try_Cut_Pawn	
@@ -72,8 +84,8 @@ Check_Mouse proc
 			cmp ax, 1
 			je can_another_cut
 			
-			push dx
-			cant_another_cut:
+			cant_another_cut:				
+				push dx
 				mov al, 'S'
 				call Serial_AL_To_Buf
 				mov cx, cb_pointer
@@ -103,7 +115,7 @@ Check_Mouse proc
 				call Serial_AL_To_Buf				
 				call Serial_Send_All	
 				mov LAST_CHOSEN_BOX, 0ffffh
-				mov TURN, 2
+			;	mov TURN, 2
 				ret
 			can_another_cut:				
 				mov ax, dx				
@@ -150,8 +162,8 @@ Check_Mouse proc
 	
 	cut_buffer db 40 dup (0)
 	cb_pointer dw 0	
+	king_can_msg db 'King can                   '
 Check_Mouse endp
-
 ;===============================================================
 Get_Box_From_Coords proc	
 	mov cx, CURSOR_X

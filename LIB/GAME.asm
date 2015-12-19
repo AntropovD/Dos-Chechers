@@ -37,12 +37,13 @@ Can_Make_Move proc
 		ret
 Can_Make_Move endp
 ;===============================================================
+; from cx
 Remove_Pawn_From_Board proc
-	push cx dx
+	push bx cx dx
 	mov ax, cx
 	mov dl, 0
 	call Set_Board_Value_To_AX_From_DL
-	pop dx cx
+	pop dx cx bx
 	ret
 Remove_Pawn_From_Board endp
 ;===============================================================
@@ -120,6 +121,39 @@ Draw_New_Pawn_On_Screen proc
 	ret
 Draw_New_Pawn_On_Screen endp
 ;===============================================================
+;bl-colour
+Draw_New_King_On_Screen proc
+	push cx dx
+	push bx
+	mov cx, dx
+	dec ch 
+	dec cl
+	xchg cl, ch
+	mov bl, 48
+	xor dx, dx
+	mov dl, ch
+	mov ch, 0
+	mov ax, cx
+	mul bl
+	mov cx, ax
+	mov ax, 7
+	sub ax, dx
+	mul bl
+	mov dx, ax
+	
+	mov ax, 2
+	int 33h
+	pop bx
+	mov al, bl
+	call Change_Colour
+	call Draw_King	
+ 	mov ax, 1 
+ 	int 33h
+
+	pop dx cx
+	ret
+Draw_New_King_On_Screen endp
+;===============================================================
 Try_Make_Move proc
 	push cx dx
 	call Repaint_Cell	
@@ -193,96 +227,22 @@ Can_Pawn_Move_like_This_Cx_Dx proc
 		ret	
 Can_Pawn_Move_like_This_Cx_Dx endp
 ;===============================================================
-
 Can_King_Move_like_This_Cx_Dx proc
-	push cx dx
-	
+	push cx dx	
 	cmp cx, dx
-	je king_cant
+	je king_cant		
+	call King_Find_Move_Offset_TO_BX	
 	
-	cmp cl, dl
-	je one_horizontal
-	cmp ch, dh
-	je one_vertical
-	
-	cmp ch, dh
-	mov bh, 1	
-	jl bh_More_0
-	mov bh, -1
-	bh_More_0:
-	
-	cmp cl, dl
-	mov bl, 1
-	jl bl_More_0
-	mov bl, -1
-	bl_More_0:
-	
-	diagonal_check:
+	king_check_all_directions_loop:
 		add ch, bh
 		add cl, bl
-		mov ax, cx
-		
-		call Get_Board_Value_By_AX_to_AL
-		
+		mov ax, cx		
+		call Get_Board_Value_By_AX_to_AL		
 		cmp al, 0
 		jne king_cant
 		cmp cx, dx
-		jne diagonal_check	
-	jmp king_can
-	
-	
-	
-	one_horizontal:
-		cmp ch, dh
-		jl try_moving_right
-		try_moving_left:
-			moving_left_loop:
-			dec ch
-			mov ax, cx
-			call Get_Board_Value_By_AX_to_AL
-			cmp al, 0
-			jne king_cant
-			cmp dh, ch
-			jne moving_left_loop
-			jmp king_can
-			
-		try_moving_right:
-			moving_right_loop:
-			inc ch
-			mov ax, cx
-			call Get_Board_Value_By_AX_to_AL
-			cmp al, 0
-			jne king_cant
-			cmp dh, ch
-			jne moving_right_loop
-			jmp king_can			
-	jmp king_cant
-	
-	one_vertical:
-		cmp cl, dl
-		jl try_moving_upper
-		try_moving_dwn:
-			moving_dwn_loop:
-			dec cl
-			mov ax, cx
-			call Get_Board_Value_By_AX_to_AL
-			cmp al, 0
-			jne king_cant
-			cmp dl, cl
-			jne moving_dwn_loop
-			jmp king_can
-			
-		try_moving_upper:
-			moving_up_loop:
-			inc cl
-			mov ax, cx
-			call Get_Board_Value_By_AX_to_AL
-			cmp al, 0
-			jne king_cant
-			cmp dl, cl
-			jne moving_up_loop
-			jmp king_can		
-	jmp king_cant
+		jne king_check_all_directions_loop
+	jmp king_can			
 
 	king_can:
 		mov ax, 1
@@ -291,8 +251,47 @@ Can_King_Move_like_This_Cx_Dx proc
 	king_cant:
 		mov ax,0
 		pop dx cx
-		ret	
+		ret			
+	
 Can_King_Move_like_This_Cx_Dx endp
+;===============================================================
+King_Find_Move_Offset_TO_BX proc
+	push cx dx
+	cmp ch, dh
+	je bh_0
+	jl bh_plus_1
+	jg bh_min_1	
+	bh_back:
+	
+	cmp cl, dl
+	je bl_0
+	jl bl_plus_1
+	jg bl_min_1	
+	bl_back:	
+	
+	pop dx cx
+	ret
+	
+	bh_0:
+		mov bh, 0
+		jmp bh_back
+	bh_plus_1:
+		mov bh, 1
+		jmp bh_back
+	bh_min_1:
+		mov bh, -1
+		jmp bh_back
+		
+	bl_0:
+		mov bl, 0
+		jmp bl_back
+	bl_plus_1:
+		mov bl, 1
+		jmp bl_back
+	bl_min_1:
+		mov bl, -1
+		jmp bl_back
+King_Find_Move_Offset_TO_BX endp
 ;===============================================================
 Can_Pawn_Cut_like_This_Cx_Dx proc
 	push cx dx
@@ -336,12 +335,8 @@ Can_Cut_Pawn proc
 	;your color
 	call Get_Board_Value_By_AX_to_AL
 	cmp al, 1
-	je pawn_cut_possible
-	cmp al, 3 
-	je pawn_cut_possible
-	jmp fail_cut
+	jne fail_cut
 	
-	pawn_cut_possible:
 	; enemy pawn
 	mov ax, dx
 	call Get_Board_Value_By_AX_to_AL
@@ -368,6 +363,65 @@ Can_Cut_Pawn proc
 		ret	
 Can_Cut_Pawn endp
 ;===============================================================
+Can_Cut_King_Position_To_Bx proc
+	push cx dx
+	
+	mov ax, cx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 3
+	jne king_cant_cut
+	
+	mov ax, dx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 0
+	jne king_cant_cut
+	
+	mov was_enemy_on_way, 0
+	mov enemy_position, 0
+	
+	cmp cx, dx
+	je king_cant		
+	call King_Find_Move_Offset_TO_BX	
+	
+	king_check_all_directions_loop_1:
+		add ch, bh
+		add cl, bl
+		mov ax, cx		
+		call Get_Board_Value_By_AX_to_AL		
+		cmp al, 0
+		je continue_checking
+		cmp al, 2
+		je incing_way
+		cmp al, 4
+		je incing_way
+		jmp king_cant
+		continue_checking:
+		cmp cx, dx
+		jne king_check_all_directions_loop_1
+	
+	cmp was_enemy_on_way, 1
+	jne king_cant_cut
+
+	king_can_cut:
+		mov ax, 1
+		mov bx, enemy_position
+		pop dx cx
+		ret
+	king_cant_cut:
+		mov ax,0
+		pop dx cx
+		ret			
+		
+	incing_way:
+		inc was_enemy_on_way
+		mov enemy_position, cx
+		jmp continue_checking
+		
+		
+	was_enemy_on_way db 0
+	enemy_position dw 0
+Can_Cut_King_Position_To_Bx endp
+;===============================================================
 Try_Cut_Pawn proc
 	push dx
 	call Repaint_Cell	
@@ -375,7 +429,6 @@ Try_Cut_Pawn proc
 	call Remove_Pawn_From_Board
 	call Remove_Pawned_Pawn_From_Board
 	
-	cmp Last_Was_King, 1
 	mov bl, 1
 	call Set_New_Pawn_On_Board
 	mov bl, PAWN_WHITE
@@ -383,6 +436,27 @@ Try_Cut_Pawn proc
 	pop dx
 	ret
 Try_Cut_Pawn endp
+;===============================================================
+
+Try_Cut_King proc
+	push cx dx
+		call Repaint_Cell	
+		call Remove_Pawn_From_Board
+		push cx
+		mov cx, bx
+		call Repaint_Cell
+		call Remove_Pawn_From_Board
+		pop cx
+		
+		mov bl, 3
+		call Set_New_Pawn_On_Board
+		mov bl, PAWN_WHITE
+		call Draw_New_King_On_Screen
+		
+	pop dx cx
+	ret
+Try_Cut_King endp
+
 ;===============================================================
 Last_Pawned_Cell dw 0
 ;===============================================================
@@ -456,6 +530,36 @@ Check_Another_Possible_Cut proc
 		pop dx cx
 		ret
 Check_Another_Possible_Cut endp
+;===============================================================
+
+Check_Another_Possible_Cut_King proc
+	push cx dx
+	mov cx, dx
+	mov fucking_index, 0
+	fucking_index_loop:
+		mov ax, fucking_index
+		mov bl, 8
+		div bl
+		inc ah
+		inc al
+		mov dx, ax		
+		call Can_Cut_King_Position_To_Bx
+		cmp ax, 1
+		je find_another_king_cut		
+		inc fucking_index
+		cmp fucking_index, 64
+		jne fucking_index_loop
+	
+	cant_find_king_cut:
+		mov ax, 0	
+		pop dx cx
+		ret
+	find_another_king_cut:
+		mov ax, 1
+		pop dx cx
+		ret
+	fucking_index dw 0
+Check_Another_Possible_Cut_King endp
 ;===============================================================
 Check_For_Cut proc
 	push cx dx
@@ -623,7 +727,7 @@ Lose_Rock proc
 	call Draw_Pawns
 	mov ax, 1
 	int 33h
-	mov TURN, 2
+	;mov TURN, 2
 	call AddMessage_Enemy_Turn
 	
 	ret
@@ -774,7 +878,7 @@ ExecuteCommand_In_Di_Size_CX proc
 		__not_can_command_tvou_mat:
 		not_can_command:
 			; Send Serial can not _ do command
-			mov TURN, 2
+			;mov TURN, 2
 			ret
 
 		can_move_command:
@@ -852,7 +956,7 @@ Check_Agree_For_New proc
 			jmp here
 		white_was:
 			mov YOUR_COLOR, 2
-			mov TURN, 2
+		;	mov TURN, 2
 		here:
 			mov sync_exit, 0
 			call Draw_Chessboard

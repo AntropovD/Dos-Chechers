@@ -12,6 +12,7 @@ Start:
 		call Keyboard_CheckBuffer	
 		call Check_History_Buffer		
 	jmp Main_Loop
+
 ;==============================================================
 Init proc 
 	call Serial_Install
@@ -102,12 +103,12 @@ Exit_Procedure endp
 	ConnectionLost_flag db 0
 	Update_History_Buffer_Flag db 0	
 
-	; STATE db 4
-	; YOUR_COLOR db 2; 1 - white 2 - black
-	; TURN db 1 ; 1- да, 2 - нет
-	STATE db 0
-	YOUR_COLOR db 0; 1 - white 2 - black
-	TURN db 0; 1- да, 2 - нет
+	STATE db 4
+	YOUR_COLOR db 2; 1 - white 2 - black
+	TURN db 1 ; 1- да, 2 - нет
+	; STATE db 0
+	; YOUR_COLOR db 0; 1 - white 2 - black
+	; TURN db 0; 1- да, 2 - нет
 
 	MY_CHOISE db 0ffh
 	OPPONENT_CHOISE db 0ffh
@@ -118,9 +119,9 @@ Exit_Procedure endp
 	; 2 - пешка врага
 	; 3 - твоя дамка
 	; 4 - дамка врага
-	BOARD 	db 0, 0, 0, 0, 0, 0, 0, 0
-		db 2, 2, 2, 2, 2, 2, 2, 2
-		db 2, 2, 2, 2, 2, 2, 2, 2
+	BOARD 	db 0, 0, 0, 3, 0, 0, 0, 0
+		db 2, 2, 0, 2, 2, 2, 2, 2
+		db 2, 2, 0, 0, 2, 2, 2, 2
 		db 0, 0, 0, 0, 0, 0, 0, 0
 		db 0, 0, 0, 0, 0, 0, 0, 0
 		db 1, 1, 1, 1, 1, 1, 1, 1
