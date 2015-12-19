@@ -79,10 +79,21 @@ Check_Mouse proc
 			jmp cant_another_cut			
 
 		Possible_Cut_Pawn:
+			cmp dl, 8
+			je pawn_became_king			
 			call Try_Cut_Pawn	
 			call Check_Another_Possible_Cut		
 			cmp ax, 1
 			je can_another_cut
+			jmp cant_another_cut
+			
+			pawn_became_king:
+				mov Last_Was_King, 1
+				call Try_Cut_Pawn_Became_King
+				call Check_Another_Possible_Cut_King
+				cmp ax, 1
+				je can_another_cut
+				jmp cant_another_cut
 			
 			cant_another_cut:				
 				push dx
@@ -119,11 +130,7 @@ Check_Mouse proc
 				ret
 			can_another_cut:				
 				mov ax, dx				
-				mov LAST_CHOSEN_BOX, dx
-				cmp dl, 8
-				jne not_put_king
-				mov Last_Was_King, 1
-				not_put_king:
+				mov LAST_CHOSEN_BOX, dx				
 				mov bp, cb_pointer
 				mov byte ptr [bp], ah
 				mov byte ptr [bp+1], al		

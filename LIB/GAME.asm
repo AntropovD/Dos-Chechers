@@ -437,6 +437,21 @@ Try_Cut_Pawn proc
 	ret
 Try_Cut_Pawn endp
 ;===============================================================
+Try_Cut_Pawn_Became_King proc
+	push dx
+	call Repaint_Cell	
+	call Repaint_Pawned_Cell
+	call Remove_Pawn_From_Board
+	call Remove_Pawned_Pawn_From_Board
+	
+	mov bl, 3
+	call Set_New_Pawn_On_Board
+	mov bl, PAWN_WHITE
+	call Draw_New_King_On_Screen
+	pop dx
+	ret
+Try_Cut_Pawn_Became_King endp
+;===============================================================
 
 Try_Cut_King proc
 	push cx dx
@@ -456,7 +471,6 @@ Try_Cut_King proc
 	pop dx cx
 	ret
 Try_Cut_King endp
-
 ;===============================================================
 Last_Pawned_Cell dw 0
 ;===============================================================
