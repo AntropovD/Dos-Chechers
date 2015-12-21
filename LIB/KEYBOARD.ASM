@@ -317,16 +317,21 @@ Can_Enemy_Do_Pawn_Command_Cx_dx proc
 	je enemy_cant_pawn
 	call Get_Board_Value_By_AX_to_AL
 	cmp al, 1
-	jne enemy_cant_pawn
+	je enemy_can_pawn
 	
-	enemy_can_pawn:
-		mov ax, 1
-		pop dx cx
-		ret 
+	cmp al, 3
+	je enemy_can_pawn
+	
+	
 	enemy_cant_pawn:
 		mov ax, 0
 		pop dx cx	
 		ret
+		
+	enemy_can_pawn:
+		mov ax, 1
+		pop dx cx
+		ret 
 Can_Enemy_Do_Pawn_Command_Cx_dx endp
 ;===============================================================
 Can_Enemy_Do_Pawn_Command_Cx_dx_With_King proc
@@ -410,6 +415,7 @@ Update_Everything proc
 		call Draw_Frame		
 		call Draw_Message_Box
 		call Update_Hist_Buf
+		call Update_Name_Box
 		mov ax, 1
 		int 33h
 	

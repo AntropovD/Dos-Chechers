@@ -416,6 +416,7 @@ ENEMY_SURRENDER proc
 ENEMY_SURRENDER endp
 ;===============================================================
 AddMessage_YOU_WIN proc
+	mov STATE, 6
 	mov di, offset BufferString
 	mov si, offset win_msg
 	mov cx, 27
@@ -432,6 +433,24 @@ AddMessage_YOU_WIN proc
 	win_msg 	db 'Вы победили!               '
 	again_msg   db 'Начать заново?             '
 AddMessage_YOU_WIN endp
+;===============================================================
+AddMessage_YOU_LOSE proc
+	mov STATE, 6
+	mov di, offset BufferString
+	mov si, offset win_msg_2
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History	
+	
+	mov di, offset BufferString
+	mov si, offset again_msg
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History	
+	ret
+	
+	win_msg_2	db 'Вы проиграли!              '	
+AddMessage_YOU_LOSE endp
 ;===============================================================
 was_Drawn db 0
 ;===============================================================
@@ -461,20 +480,37 @@ Write_Arrived_Message endp
 Step_Accept proc
 	mov STATE, 4
 	mov TURN, 2
+	call Check_You_Have_Moves
+	cmp al, 1
+	jne you_not_have_moves
+	
+	call Check_Enemy_Has_Moves
+	cmp al, 1
+	jne enemy_cant_move
+	
 	call Copy_Temp_To_BOARD
 	call AddMessage_Enemy_Turn
 	ret
+	
+	enemy_cant_move:
+		call AddMessage_YOU_WIN
+		ret
+	
+	you_not_have_moves:
+		call AddMessage_YOU_LOSE
+		ret
+		
 Step_Accept endp
 ;===============================================================
 Step_NOT_Accept proc
 	mov STATE, 4
-	mov TURN, 1
+	mov TURN, 1	
 	call AddMessage_Turn_not_Confirm
 	call Copy_BOARD_TO_TEMP
 	mov ax, 2
 	int 33h
 	call Draw_Chessboard
-	call Draw_Pawns	
+	call Draw_Pawns		
 	mov ax, 1
 	int 33h
 	ret
@@ -498,4 +534,61 @@ Copy_BOARD_TO_TEMP proc
 	ret
 Copy_BOARD_TO_TEMP endp
 ;===============================================================
+Check_Enemy_Has_Moves proc
+	push cx dx
+	mov fucking_index_2, 0
+	fucking_index_loop_2:
+		mov ax, fucking_index_2
+		mov bl, 8
+		div bl
+		inc ah
+		inc al
+		call Get_Board_Value_By_AX_to_AL
+		cmp al, 2
+		je find_some_enemy		
+		cmp al, 4
+		je find_some_enemy
+		inc fucking_index_2
+		cmp fucking_index_2, 64
+		jne fucking_index_loop_2
+	
+	not_find_any_enemy:
+		mov ax, 0	
+		pop dx cx
+		ret
+	find_some_enemy:
+		mov ax, 1
+		pop dx cx
+		ret
+	fucking_index_2 dw 0
+Check_Enemy_Has_Moves endp
+;===============================================================
+Check_You_Have_Moves proc
+	push cx dx
+	mov fucking_index_3, 0
+	fucking_index_loop_3:
+		mov ax, fucking_index_3
+		mov bl, 8
+		div bl
+		inc ah
+		inc al
+		call Get_Board_Value_By_AX_to_AL
+		cmp al, 1
+		je find_some_you
+		cmp al, 3
+		je find_some_you
+		inc fucking_index_3
+		cmp fucking_index_3, 64
+		jne fucking_index_loop_3
+	
+	not_find_you:
+		mov ax, 0	
+		pop dx cx
+		ret
+	find_some_you:
+		mov ax, 1
+		pop dx cx
+		ret
+	fucking_index_3 dw 0
+Check_You_Have_Moves endp
 ;===============================================================

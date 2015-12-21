@@ -1049,17 +1049,33 @@ ExecuteCommand_In_Di_Size_CX proc
 				cmp di, si
 				jne all_cuts_loop
 				
-			can_pawn_finish:
+			can_pawn_finish:				
 				mov TURN, 1
 				call Send_Move_Accept
 				call AddMessage_Your_Turn
+				call Check_Enemy_Has_Moves
+				cmp al, 1
+				jne enemy_hasnot_moves
+				
+				call Check_You_Have_Moves
+				cmp al, 1
+				jne you_havenot_moves
 				ret
 				
 		can_move_command:
 			call Make_Step_Cx_Dx
+			
 			mov TURN, 1
-			call Send_Move_Accept
+			call Send_Move_Accept			
 			call AddMessage_Your_Turn	
+			
+			call Check_Enemy_Has_Moves
+			cmp al, 1
+			jne enemy_hasnot_moves
+				
+			call Check_You_Have_Moves			
+			cmp al, 1
+			jne you_havenot_moves
 			ret		
 		
 	can_king_move_command:
@@ -1069,10 +1085,19 @@ ExecuteCommand_In_Di_Size_CX proc
 		mov bl, 4
 		call Set_New_Pawn_On_Board
 		mov bl, PAWN_BLACK
-		call Draw_New_King_On_Screen
+		call Draw_New_King_On_Screen		
+	
 		mov TURN, 1
 		call Send_Move_Accept
 		call AddMessage_Your_Turn
+		
+		call Check_Enemy_Has_Moves
+		cmp al, 1
+		jne enemy_hasnot_moves
+				
+		call Check_You_Have_Moves
+		cmp al, 1
+		jne you_havenot_moves
 		ret
 		
 		Do_pawn_command:
@@ -1083,6 +1108,16 @@ ExecuteCommand_In_Di_Size_CX proc
 			call Execute_Enemy_Pawn_Command_With_King
 			jmp commands_execute_back
 		
+		
+		you_havenot_moves:	
+			call AddMessage_YOU_LOSE
+			ret		
+			
+		enemy_hasnot_moves:
+			call AddMessage_YOU_WIN
+			ret
+			
+			
 	cmd_size dw 0
 	Enemy_Was_King db 0
 ExecuteCommand_In_Di_Size_CX endp	
