@@ -9,13 +9,13 @@ Init_Graphic proc
 
 	mov HB_Pointer, offset History_Buffer
 
-	cmp YOUR_COLOR, 2
-	jne not_change_Color
-		mov bl, PAWN_WHITE
-		mov bh, PAWN_BLACK
-		mov PAWN_BLACK, bl
-		mov PAWN_WHITE, bh	
-	not_change_Color:
+	; cmp YOUR_COLOR, 2
+	; jne not_change_Color
+		; mov bl, PAWN_WHITE
+		; mov bh, PAWN_BLACK
+		; mov PAWN_BLACK, bl
+		; mov PAWN_WHITE, bh	
+	; not_change_Color:
 	
 	call Init_Pawn_Buffer
 	call Draw_Chessboard

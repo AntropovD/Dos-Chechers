@@ -66,8 +66,9 @@ Check_Mouse proc
 			
 		Possible_Make_Move:	
 			call Try_Make_Move		
-			;mov TURN, 2			
+			mov TURN, 2			
 			mov LAST_CHOSEN_BOX, 0ffffh
+			mov STATE, 5
 			ret
 		
 		Possible_Cut_King:
@@ -126,7 +127,8 @@ Check_Mouse proc
 				call Serial_AL_To_Buf				
 				call Serial_Send_All	
 				mov LAST_CHOSEN_BOX, 0ffffh
-			;	mov TURN, 2
+				mov TURN, 2
+				mov STATE, 5
 				ret
 			can_another_cut:				
 				mov ax, dx				
@@ -139,6 +141,8 @@ Check_Mouse proc
 				ret		
 
 	first_pawn_in_move:
+		mov Last_Was_King, 0
+		mov Enemy_Was_King, 0
 		call Check_If_Maximal_Cut_Way
 		cmp ax, 1
 		jne check_mouse_exit

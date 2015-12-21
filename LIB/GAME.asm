@@ -72,7 +72,7 @@ Set_Board_Value_To_AX_From_DL proc
 	ret	
 Set_Board_Value_To_AX_From_DL endp
 ;===============================================================
-;bl-colour
+;bl-VALUE
 Set_New_Pawn_On_Board proc
 	push cx dx
 	mov ax, dx
@@ -351,8 +351,12 @@ Can_Cut_Pawn proc
 	mov Last_Pawned_Cell, bx
 	call Get_Board_Value_By_AX_to_AL
 	cmp al, 2
-	jne fail_cut
+	je good_cut
 
+	cmp al, 4
+	je good_cut
+	
+	jmp fail_cut
 	good_cut:		
 		mov ax, 1
 		pop dx cx
@@ -380,7 +384,7 @@ Can_Cut_King_Position_To_Bx proc
 	mov enemy_position, 0
 	
 	cmp cx, dx
-	je king_cant		
+	je king_cant_cut	
 	call King_Find_Move_Offset_TO_BX	
 	
 	king_check_all_directions_loop_1:
@@ -394,7 +398,7 @@ Can_Cut_King_Position_To_Bx proc
 		je incing_way
 		cmp al, 4
 		je incing_way
-		jmp king_cant
+		jmp king_cant_cut
 		continue_checking:
 		cmp cx, dx
 		jne king_check_all_directions_loop_1
@@ -407,6 +411,7 @@ Can_Cut_King_Position_To_Bx proc
 		mov bx, enemy_position
 		pop dx cx
 		ret
+		
 	king_cant_cut:
 		mov ax,0
 		pop dx cx
@@ -421,6 +426,56 @@ Can_Cut_King_Position_To_Bx proc
 	was_enemy_on_way db 0
 	enemy_position dw 0
 Can_Cut_King_Position_To_Bx endp
+;===============================================================
+Enemy_Can_Cut_King_Position_To_Bx proc	
+	push cx dx	
+	
+	mov was_enemy_on_way_2, 0
+	mov enemy_position_2, 0
+	
+	cmp cx, dx
+	je king_cant_cut_2		
+	call King_Find_Move_Offset_TO_BX	
+	
+	king_check_all_directions_loop_2:
+		add ch, bh
+		add cl, bl
+		mov ax, cx		
+		call Get_Board_Value_By_AX_to_AL		
+		cmp al, 0
+		je continue_checking_2
+		cmp al, 1
+		je incing_way_2
+		cmp al, 3
+		je incing_way_2
+		jmp king_cant_cut_2
+		continue_checking_2:
+		cmp cx, dx
+		jne king_check_all_directions_loop_2
+	
+	cmp was_enemy_on_way_2, 1
+	jne king_cant_cut_2
+
+	king_can_cut_2:
+		mov ax, 1
+		mov bx, enemy_position_2
+		pop dx cx
+		ret
+		
+	king_cant_cut_2:
+		mov ax,0
+		pop dx cx
+		ret			
+		
+	incing_way_2:
+		inc was_enemy_on_way_2
+		mov enemy_position_2, cx
+		jmp continue_checking_2
+		
+		
+	was_enemy_on_way_2 db 0
+	enemy_position_2 dw 0
+Enemy_Can_Cut_King_Position_To_Bx endp
 ;===============================================================
 Try_Cut_Pawn proc
 	push dx
@@ -533,7 +588,6 @@ Check_Another_Possible_Cut proc
 	cmp ax, 1
 	je possible_cut
 
-
 	not_possible_cut:
 		mov ax, 0
 		pop dx cx
@@ -545,7 +599,6 @@ Check_Another_Possible_Cut proc
 		ret
 Check_Another_Possible_Cut endp
 ;===============================================================
-
 Check_Another_Possible_Cut_King proc
 	push cx dx
 	mov cx, dx
@@ -763,17 +816,23 @@ Make_Step_Cx_Dx proc
 	
 	push cx dx
 	call Repaint_Cell	
-	mov ax, cx
-	call Get_Board_Value_By_AX_to_AL
-	push ax
-	call Remove_Pawn_From_Board
-	pop bx
+	call Remove_Pawn_From_Board	
+	cmp dl, 1
+	je became_king_com
+	mov bl, 2
 	call Set_New_Pawn_On_Board
 	mov bl, PAWN_BLACK
 	call Draw_New_Pawn_On_Screen
-	pop dx cx
-	
+	pop dx cx	
 	ret
+	
+	became_king_com:
+		mov bl, 4
+		call Set_New_Pawn_On_Board
+		mov bl, PAWN_BLACK
+		call Draw_New_King_On_Screen
+		pop dx cx	
+		ret
 Make_Step_Cx_Dx endp
 ;===============================================================
 Reverse_Cx_Dx proc
@@ -802,107 +861,7 @@ Reverse_DX proc
 	ret
 Reverse_DX endp
 ;===============================================================
-ExecuteCommand_In_Di_Size_CX proc
-	mov cmd_size, cx
-	push di
-	sub30_loop:
-		mov bl, [di]
-		sub bl, 30h
-		mov [di], bl
-		inc di
-		loop sub30_loop
-	pop di
 
-	; mov ch, [di]
-	; mov cl, [di+1]
-	; mov dh, [di+2]
-	; mov dl, [di+3]
-	; call Reverse_Cx_Dx
-	; push cx dx
-	; mov ax, cx
-	; call Get_Board_Value_By_AX_to_AL
-	; cmp al, 2
-	; jne fail_execute
-	; mov ax, dx
-	; call Get_Board_Value_By_AX_to_AL
-	; cmp al,0
-	; jne fail_execute
-	
-	; call Make_Step_Cx_Dx
-	; mov TURN, 1
-	
-	; fail_execute:
-		; pop dx cx
-		; ret
-	mov ch, [di]
-	mov cl, [di+1]
-	mov dh, [di+2]
-	mov dl, [di+3]
-	call Reverse_Cx_Dx
-	
-	mov ax, cx
-	call Get_Board_Value_By_AX_to_AL
-	cmp al, 2
-	jne not_can_command
-	
-	call Can_Enemy_Do_Move_Command_Cx_Dx
-	cmp ax, 1
-	je can_move_command	
-
-	call Can_Enemy_Do_Pawn_Command_Cx_dx
-	cmp ax, 1
-	jne not_can_command
-	
-		; cmp cmd_size, 2
-		; je can_pawn_command
-		; all_moves_loop:				
-			; mov cx, dx
-			; mov dh, byte ptr[di]
-			; mov dl, byte ptr[di+1]
-				; call Can_Enemy_Do_Pawn_Command_Cx_dx
-				; cmp ax, 1
-				; jne not_can_command
-			; sub cmd_size, 2
-			; cmp cmd_size, 2
-			; jne all_moves_loop	
-
-		can_pawn_command:
-			call Execute_Enemy_Pawn_Command			
-			mov si, di
-			add si, cmd_size			
-			cmp cmd_size, 4
-			je can_pawn_finish
-			add di, 4
-			all_cuts_loop:				
-				mov cx, dx
-				mov dh, byte ptr[di]
-				mov dl, byte ptr[di+1]
-				call Reverse_DX
-				push si
-				call Execute_Enemy_Pawn_Command
-				pop si
-				add di, 2
-				cmp di, si
-				jne all_cuts_loop
-				
-			can_pawn_finish:
-				mov TURN, 1
-				ret
-
-		__not_can_command_tvou_mat:
-		not_can_command:
-			; Send Serial can not _ do command
-			;mov TURN, 2
-			ret
-
-		can_move_command:
-			call Make_Step_Cx_Dx
-			mov TURN, 1
-			ret	
-	
-	cmd_size dw 0
-	Enemy_Was_King db 0
-ExecuteCommand_In_Di_Size_CX endp
 ;===============================================================
 Check_Possible_Cut_CX proc
 	push cx dx
@@ -970,13 +929,15 @@ Check_Agree_For_New proc
 			jmp here
 		white_was:
 			mov YOUR_COLOR, 2
-		;	mov TURN, 2
+			;mov TURN, 2
 		here:
 			mov sync_exit, 0
 			call Draw_Chessboard
 			mov sync_exit, 0
 			call Draw_Pawns			
 			mov STATE, 4		
+			mov Enemy_agree_new, 0	
+			mov you_agree_new, 0
 		
 	agree_exit:
 		ret
@@ -1003,6 +964,129 @@ EXECUTE_DRAWN_AGREE proc
  	drawn_agree_msg db 'Ничья!                     '
 	ret
 EXECUTE_DRAWN_AGREE endp
+;===============================================================
+ExecuteCommand_In_Di_Size_CX proc
+	mov cmd_size, cx
+	mov Enemy_Was_King, 0
+	mov Last_Was_King, 0
+	push di
+	sub30_loop:
+		mov bl, [di]
+		sub bl, 30h
+		mov [di], bl
+		inc di
+		loop sub30_loop
+	pop di
+	
+	mov ch, [di]
+	mov cl, [di+1]
+	mov dh, [di+2]
+	mov dl, [di+3]
+	call Reverse_Cx_Dx
+	
+	mov ax, dx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 0
+	jne not_can_command
+	
+	mov ax, cx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 2
+	je enemy_moves_pawn
+	
+	cmp al, 4 
+	je enemy_moves_pawn	
+		
+	not_can_command:
+		; Send Serial can not _ do command
+		mov TURN, 2
+		call Copy_BOARD_TO_TEMP
+		mov ax, 2
+		int 33h
+		call Draw_Chessboard
+		call Draw_Pawns	
+		mov ax, 1
+		int 33h
+		call Send_Wrong_Move
+		call AddMessage_Enemy_Gives_wrong_move
+		ret
+		
+			
+	enemy_moves_pawn:
+		call Can_Enemy_Do_Move_Command_Cx_Dx
+		cmp ax, 1
+		je can_move_command	
+		
+		call Can_King_Move_like_This_Cx_Dx
+		cmp ax, 1
+		je can_king_move_command		
+
+		can_pawn_command:
+			mov si, di
+			add si, cmd_size	
+			add di, 2
+			mov dx, cx
+			all_cuts_loop:					
+				mov cx, dx
+				mov dh, byte ptr[di]
+				mov dl, byte ptr[di+1]
+				call Reverse_DX
+				push si di						
+				
+				call Can_Enemy_Do_Pawn_Command_Cx_dx
+				cmp al, 1
+				je Do_pawn_command				
+				
+				call Can_Enemy_Do_Pawn_Command_Cx_dx_With_King
+				cmp al, 1
+				je Do_pawn_command_With_King
+				jmp not_can_command
+				
+				commands_execute_back:
+				
+				pop di si
+				add di, 2
+				cmp di, si
+				jne all_cuts_loop
+				
+			can_pawn_finish:
+				mov TURN, 1
+				call Send_Move_Accept
+				call AddMessage_Your_Turn
+				ret
+				
+		can_move_command:
+			call Make_Step_Cx_Dx
+			mov TURN, 1
+			call Send_Move_Accept
+			call AddMessage_Your_Turn	
+			ret		
+		
+	can_king_move_command:
+		call Repaint_Cell	
+		call Remove_Pawn_From_Board			
+		mov ax, cx
+		mov bl, 4
+		call Set_New_Pawn_On_Board
+		mov bl, PAWN_BLACK
+		call Draw_New_King_On_Screen
+		mov TURN, 1
+		call Send_Move_Accept
+		call AddMessage_Your_Turn
+		ret
+		
+		Do_pawn_command:
+			call Execute_Enemy_Pawn_Command
+			jmp commands_execute_back
+		
+		Do_pawn_command_With_King:
+			call Execute_Enemy_Pawn_Command_With_King
+			jmp commands_execute_back
+		
+	cmd_size dw 0
+	Enemy_Was_King db 0
+ExecuteCommand_In_Di_Size_CX endp	
+;===============================================================
 ;===============================================================
 AddMessage_Input_Paper_Rock_Scissors proc
 	mov di, offset BufferString

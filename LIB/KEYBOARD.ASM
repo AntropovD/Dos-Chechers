@@ -270,33 +270,6 @@ Is_Digit_Al endp
 ;===============================================================
 ; cx - from dx - to
 Can_Enemy_Do_Move_Command_Cx_Dx proc
-	; check if board[cx] = color, board[dx] = empty
-	mov ax, cx
-	; call Get_Board_Value_By_AX_to_AL
-	; cmp al, 2
-	; jne not_can_enemy_do_command
-
-	mov ax, dx
-	call Get_Board_Value_By_AX_to_AL
-	cmp al, 0
-	jne not_can_enemy_do_command 
-	; distance check
-	
-	call Can_Enemy_Move_Like_This_Cx_Dx	
-	cmp ax, 1
-	jne not_can_enemy_do_command
-	
-	can_enemy_do_command:
-		mov ax, 1	
-		ret
-	not_can_enemy_do_command:
-		mov ax, 0
-		ret
-		
-		
-Can_Enemy_Do_Move_Command_Cx_Dx endp
-;===============================================================
-Can_Enemy_Move_Like_This_Cx_Dx proc
 	push cx dx
 	add dx, 3030h	
 	sub dh, ch
@@ -318,7 +291,7 @@ Can_Enemy_Move_Like_This_Cx_Dx proc
 		mov ax,0
 		pop dx cx
 		ret	
-Can_Enemy_Move_Like_This_Cx_Dx endp
+Can_Enemy_Do_Move_Command_Cx_Dx endp
 ;===============================================================
 Enemy_Command_Length dw 0
 ;===============================================================
@@ -328,12 +301,16 @@ Can_Enemy_Do_Pawn_Command_Cx_dx proc
 	cmp cl, dl
 	jl enemy_cant_pawn
 	
-	; empty cell
 	mov ax, dx
 	call Get_Board_Value_By_AX_to_AL
-	cmp al, 0
+	cmp al, 0 
 	jne enemy_cant_pawn
-
+	
+	mov ax, cx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 2
+	jne enemy_cant_pawn
+	
 	; middle color
 	call Find_Middle_Cell
 	cmp ax, 0ffffh
@@ -352,22 +329,78 @@ Can_Enemy_Do_Pawn_Command_Cx_dx proc
 		ret
 Can_Enemy_Do_Pawn_Command_Cx_dx endp
 ;===============================================================
+Can_Enemy_Do_Pawn_Command_Cx_dx_With_King proc
+	push cx dx
+	
+	mov ax, dx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 0 
+	jne enemy_cant_pawn_1
+	
+	mov ax, cx
+	call Get_Board_Value_By_AX_to_AL
+	cmp al, 4
+	jne enemy_cant_pawn_1
+	
+	call Enemy_Can_Cut_King_Position_To_Bx
+	cmp ax, 1
+	jne enemy_cant_pawn_1
+	
+	enemy_can_pawn_1:
+		mov ax, 1
+		pop dx cx
+		ret 
+	enemy_cant_pawn_1:
+		mov ax, 0
+		pop dx cx	
+		ret
+Can_Enemy_Do_Pawn_Command_Cx_dx_With_King endp
+;===============================================================
 Execute_Enemy_Pawn_Command proc
-	push cx dx	
-
+	push cx dx			
+	
 	call Repaint_Cell	
 	call Repaint_Pawned_Cell
 	
 	call Remove_Pawn_From_Board
 	call Remove_Pawned_Pawn_From_Board
+	
+	cmp dl, 1
+	je enemy_became_king
+	
 	mov bl, 2
 	call Set_New_Pawn_On_Board
 	mov bl, PAWN_BLACK
-	call Draw_New_Pawn_On_Screen
-	
+	call Draw_New_Pawn_On_Screen	
 	pop dx cx
 	ret
+	
+	enemy_became_king:
+		mov bl, 4
+		call Set_New_Pawn_On_Board
+		mov bl, PAWN_BLACK
+		call Draw_New_King_On_Screen
+		pop dx cx
+		ret
 Execute_Enemy_Pawn_Command endp
+;===============================================================
+Execute_Enemy_Pawn_Command_With_King proc
+	push cx dx			
+	
+	call Repaint_Cell	
+	call Remove_Pawn_From_Board
+	
+	mov cx, bx
+	call Repaint_Cell	
+	call Remove_Pawn_From_Board
+	
+	mov bl, 4
+	call Set_New_Pawn_On_Board
+	mov bl, PAWN_BLACK
+	call Draw_New_King_On_Screen
+	pop dx cx
+	ret
+Execute_Enemy_Pawn_Command_With_King endp
 ;===============================================================
 Update_Everything proc
 		mov ax, 12h

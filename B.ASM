@@ -68,14 +68,14 @@ interrupt_08h proc
 	cmp sync_exit, 60
 	jl not_sync_exit
 	cmp State, 0
-		je not_connectionLost
-		mov State, 0
-		mov TURN, 0
-		mov YOUR_COLOR, 0	
-		mov MY_CHOISE, 0ffh
-		mov OPPONENT_CHOISE, 0ffh		
-		call ConnectionLost_Message	
-		call RESET_BOARD
+		; je not_connectionLost
+		; mov State, 0
+		; mov TURN, 0
+		; mov YOUR_COLOR, 0	
+		; mov MY_CHOISE, 0ffh
+		; mov OPPONENT_CHOISE, 0ffh		
+		; call ConnectionLost_Message	
+		; call RESET_BOARD
 
 	not_connectionLost:
 	not_sync_exit:
@@ -105,13 +105,13 @@ Exit_Procedure endp
 	Update_History_Buffer_Flag db 0	
 
 	; ;One Player Mode
-	STATE db 0
-	YOUR_COLOR db 0; 1 - white 2 - black
-	TURN db 0 ; 1- да, 2 - нет
-	
 	; STATE db 4
-	; YOUR_COLOR db 1; 1 - white 2 - black
-	; TURN db 1; 1- да, 2 - нет
+	; YOUR_COLOR db 2; 1 - white 2 - black
+	; TURN db 1 ; 1- да, 2 - нет
+	
+	STATE db 4
+	YOUR_COLOR db 2; 1 - white 2 - black
+	TURN db 2; 1- да, 2 - нет
 
 	MY_CHOISE db 0ffh
 	OPPONENT_CHOISE db 0ffh
@@ -138,9 +138,8 @@ Exit_Procedure endp
 		db 0, 0, 0, 0, 0, 0, 0, 0
 		db 0, 0, 0, 0, 0, 0, 0, 0
 		db 1, 1, 1, 1, 1, 1, 1, 1
-		db 2, 1, 1, 1, 1, 1, 1, 1
+		db 1, 1, 1, 1, 1, 1, 1, 1
 		db 0, 0, 0, 0, 0, 0, 0, 0
-	
 		
 	INITIALIZE_BOARD db 0, 0, 0, 0, 0, 0, 0, 0
 		db 2, 2, 2, 2, 2, 2, 2, 2

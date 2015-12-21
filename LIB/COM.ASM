@@ -9,12 +9,9 @@ Send_Sync_Impulse endp
 
 Check_Com_Port proc
 	call Serial_Check_Sth_Come	
-	je nothing_comes
+	je nothing_comes	
 	
-	
-	
-	call Serial_Get_Symbol_To_AL
-	
+	call Serial_Get_Symbol_To_AL	
 		
 		cmp message_buffer_1_flag, 1
 		jne check_username_buffer
@@ -194,10 +191,19 @@ Check_Com_Port proc
 	not_N:
 		cmp al, 'R'
 		jne not_R
+		cmp STATE, 5
+		jne nothing_comes
+		call Step_Accept
+		ret
+		
 
 	not_R:
 		cmp al, 'W'
 		jne not_W
+		cmp STATE, 5
+		jne nothing_comes
+		call Step_NOT_Accept
+		ret
 
 	not_W:
 		cmp al, 'H'
@@ -206,6 +212,7 @@ Check_Com_Port proc
 		jne nothing_comes
 		mov Enemy_agree_new, 1
 		call Check_Agree_For_New	
+		ret
 		
 	not_H:
 		cmp al, '1'
@@ -223,8 +230,7 @@ Check_Com_Port proc
 		jne not_2
 		mov Opponent_Choise, '2'
 		call Check_Opponent_Choise
-		ret
-		
+		ret		
 
 	not_2:
 		cmp al, '3'
@@ -234,7 +240,6 @@ Check_Com_Port proc
 		mov Opponent_Choise, '3'
 		call Check_Opponent_Choise
 		ret
-
 	not_3:
 
 	nothing_comes:
@@ -245,8 +250,7 @@ Check_Com_Port proc
 		mov cx, cmbuffer_pointer
 		sub cx, offset command_buffer
 		mov di, offset command_buffer
-		call ExecuteCommand_In_Di_Size_CX
-		call Send_Move_Accept
+		call ExecuteCommand_In_Di_Size_CX		
 		ret
 
 
@@ -338,6 +342,14 @@ Send_Move_Accept proc
 	ret
 Send_Move_Accept endp
 ;===============================================================
+Send_Wrong_Move proc
+	mov al, 'W'
+	call Serial_AL_To_Buf
+	call Serial_Send_All	
+	ret
+	ret
+Send_Wrong_Move endp
+;===============================================================
 AddMessage_Your_Turn proc
 	mov di, offset BufferString
 	mov si, offset your_move_msg
@@ -359,6 +371,28 @@ AddMessage_Enemy_Turn proc
 	ret	
  	enemy_move_msg db 'Ход противника             '
 AddMessage_Enemy_Turn endp
+;===============================================================
+AddMessage_Turn_not_Confirm proc
+	mov di, offset BufferString
+	mov si, offset your_move_msg_confirm
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History
+
+	ret	
+ 	your_move_msg_confirm db 'Ход не подтвержден         '
+AddMessage_Turn_not_Confirm endp
+;===============================================================
+AddMessage_Enemy_Gives_wrong_move proc
+	mov di, offset BufferString
+	mov si, offset your_move_msg_confirm_wrong
+	mov cx, 27
+	rep movsb
+	call Add_BufferString_To_History
+
+	ret	
+ 	your_move_msg_confirm_wrong db 'Противник ошибся с ходом   '
+AddMessage_Enemy_Gives_wrong_move endp
 ;===============================================================
 ENEMY_SURRENDER proc
 	cmp STATE, 4
@@ -424,7 +458,44 @@ Write_Arrived_Message proc
 	message_buffer_1_empty db 54 dup(' ')
 Write_Arrived_Message endp
 ;===============================================================
-
-
-
+Step_Accept proc
+	mov STATE, 4
+	mov TURN, 2
+	call Copy_Temp_To_BOARD
+	call AddMessage_Enemy_Turn
+	ret
+Step_Accept endp
+;===============================================================
+Step_NOT_Accept proc
+	mov STATE, 4
+	mov TURN, 1
+	call AddMessage_Turn_not_Confirm
+	call Copy_BOARD_TO_TEMP
+	mov ax, 2
+	int 33h
+	call Draw_Chessboard
+	call Draw_Pawns	
+	mov ax, 1
+	int 33h
+	ret
+Step_NOT_Accept endp
+;===============================================================
+Copy_Temp_To_BOARD proc
+	mov si, offset BOARD
+	mov di, offset CONST_BOARD
+	mov cx, 64
+	
+	rep movsb	
+	ret
+Copy_Temp_To_BOARD endp
+;===============================================================
+Copy_BOARD_TO_TEMP proc
+	mov si, offset CONST_BOARD
+	mov di, offset BOARD
+	mov cx, 64
+	
+	rep movsb	
+	ret
+Copy_BOARD_TO_TEMP endp
+;===============================================================
 ;===============================================================
