@@ -255,7 +255,7 @@ Check_Com_Port proc
 
 
 	command_buffer_flag db 0
-	command_buffer db 40 dup(' ')
+	command_buffer db 100 dup(' ')
 	cmbuffer_pointer dw 0
 	
 	username_buffer_flag db 0

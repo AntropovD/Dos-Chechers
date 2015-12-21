@@ -171,7 +171,7 @@ Check_Mouse proc
 	check_mouse_exit:
 	ret
 	
-	cut_buffer db 40 dup (0)
+	cut_buffer db 100 dup (0)
 	cb_pointer dw 0	
 	king_can_msg db 'King can                   '
 Check_Mouse endp
