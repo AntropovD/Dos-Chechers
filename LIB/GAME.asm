@@ -861,7 +861,33 @@ Reverse_DX proc
 	ret
 Reverse_DX endp
 ;===============================================================
-
+Check_Possible_King_Cut_CX proc
+	push cx dx
+	mov fucking_index_5, 0
+	fucking_index_loop_5:
+		mov ax, fucking_index_5
+		mov bl, 8
+		div bl
+		inc ah
+		inc al
+		mov dx, ax		
+		call Can_Cut_King_Position_To_Bx
+		cmp ax, 1
+		je find_another_king_cut_5		
+		inc fucking_index_5
+		cmp fucking_index_5, 64
+		jne fucking_index_loop_5
+	
+	cant_find_king_cut_5:
+		mov ax, 0	
+		pop dx cx
+		ret
+	find_another_king_cut_5:
+		mov ax, 1
+		pop dx cx
+		ret
+	fucking_index_5 dw 0
+Check_Possible_King_Cut_CX endp
 ;===============================================================
 Check_Possible_Cut_CX proc
 	push cx dx

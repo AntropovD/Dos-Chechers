@@ -55,6 +55,10 @@ Check_Mouse proc
 		call Check_Possible_Cut_CX
 		cmp ax, 1
 		je check_mouse_exit
+		
+		call Check_Possible_King_Cut_CX
+		cmp ax, 1
+		je check_mouse_exit		
 
 		call Can_Make_Move
 		cmp ax, 1
